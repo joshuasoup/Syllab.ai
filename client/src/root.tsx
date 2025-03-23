@@ -2,6 +2,9 @@ import React from "react";
 import { Outlet } from "react-router-dom";
 import { Suspense } from "react";
 import "./app.css";
+import { api } from "@/services/api";
+import { User } from "@/types/user";
+import { redirect } from "react-router-dom";
 
 export const links = () => [
   { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Rubik+Mono+One&family=Roboto:wght@400;700&display=swap" },
@@ -13,6 +16,16 @@ export const meta = () => [
   { name: "viewport", content: "width=device-width, initial-scale=1" },
   { title: "SyllabAI - Syllabus Analysis" },
 ];
+
+export const loader = async () => {
+  try {
+    const user = await api.user.getCurrent();
+    return { user };
+  } catch (error) {
+    // Don't redirect here, let the protected routes handle that
+    return { user: null };
+  }
+};
 
 export default function App() {
   return (

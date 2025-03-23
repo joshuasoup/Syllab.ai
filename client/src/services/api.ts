@@ -2,47 +2,36 @@ import { User } from '@/types/user';
 import { Syllabus } from '@/types/syllabus';
 
 // Base URL for your backend API
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
 // Helper function for making API requests
 async function fetchApi<T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<T> {
-  const response = await fetch(`${BASE_URL}${endpoint}`, {
-    ...options,
-    credentials: 'include',
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
-  });
+  try {
+    const response = await fetch(`${BASE_URL}${endpoint}`, {
+      ...options,
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+        ...options.headers,
+      },
+    });
 
-  if (!response.ok) {
-    throw new Error(`API error: ${response.statusText}`);
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => null);
+      throw new Error(errorData?.message || `API error: ${response.statusText}`);
+    }
+
+    return response.json();
+  } catch (error) {
+    console.error('API Request failed:', {
+      url: `${BASE_URL}${endpoint}`,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+    throw error;
   }
-
-  return response.json();
-}
-
-// Types
-interface User {
-  id: string;
-  email: string;
-  firstName?: string;
-  lastName?: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface Syllabus {
-  id: string;
-  userId: string;
-  file: File;
-  createdAt: string;
-  updatedAt: string;
-  status: 'processing' | 'completed' | 'failed';
-  results?: any;
 }
 
 // API endpoints

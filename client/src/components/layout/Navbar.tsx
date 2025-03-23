@@ -5,6 +5,7 @@ import { Button } from "../ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../ui/dropdown-menu";
 import { UserSilhouette } from "@/components/shared/UserSilhouette";
+import imgUrl from "@images/syllabai-logo.png";
 
 // Props interface for the Navbar component
 interface NavbarProps {
@@ -83,7 +84,7 @@ export const Navbar = () => {
           to="/"
           className="text-2xl font-semibold flex items-center gap-2"
         >
-          <img src="/syllabai_logo.png" alt="SyllabAI Logo" className="h-8 w-8 mr-2" />
+          <img src={imgUrl} alt="SyllabAI Logo" className="h-8 w-8 mr-2" />
           <span className="text-black" style={{ fontWeight: 600 }}>
             SyllabAI
           </span>
@@ -97,7 +98,7 @@ export const Navbar = () => {
             className="w-14 h-14 p-0 flex items-center justify-center transition-all border border-transparent"
             asChild
           >
-            <Link to="/sign-up"><UserSilhouette className="text-black w-full h-full" /></Link>
+            <Link to="auth/sign-up"><UserSilhouette className="text-black w-full h-full" /></Link>
           </Button>
         )}
       </div>

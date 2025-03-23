@@ -3,6 +3,8 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import syllabusRoutes from './routes/syllabusRoutes';
 import chatRoutes from './routes/chatRoutes';
+import authRoutes from './routes/authRoutes';
+import userRoutes from './routes/userRoutes';
 import fs from 'fs';
 import path from 'path';
 
@@ -19,12 +21,17 @@ const app = express();
 const port = process.env.PORT || 3001;
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: process.env.CLIENT_URL || 'http://localhost:5173',
+  credentials: true
+}));
 app.use(express.json());
 
 // Routes
 app.use('/api/syllabi', syllabusRoutes);
 app.use('/api', chatRoutes);
+app.use('/api', authRoutes);
+app.use('/api', userRoutes);
 
 // Error handling
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
