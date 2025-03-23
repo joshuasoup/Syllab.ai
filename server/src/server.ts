@@ -34,5 +34,11 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
 
 // Start server
 app.listen(port, () => {
-  console.log(`Server running on port ${port}`);
+  const clientPort = 5173; // Updated to match your actual client port (Vite default)
+  const serverUrl = `http://localhost:${port}`;
+  const clientUrl = `http://localhost:${clientPort}`;
+  
+  console.log(`Server URL: ${serverUrl}`);
+  // For terminals that support hyperlinks
+  console.log(`\nOpen client: \x1b[34m\x1b[4m${clientUrl}\x1b[0m`);
 });
