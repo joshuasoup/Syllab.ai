@@ -86,11 +86,11 @@ cd Syllab.ai
 ```bash
 # Install client dependencies
 cd client
-npm install
+yarn install
 
 # Install server dependencies
 cd ../server
-npm install
+yarn install
 ```
 
 3. Set up environment variables:
@@ -102,10 +102,10 @@ npm install
 
 ```bash
 # Start the client (from client directory)
-npm run dev
+yarn run dev
 
 # Start the server (from server directory)
-npm run dev
+yarn run dev
 ```
 
 ## License
