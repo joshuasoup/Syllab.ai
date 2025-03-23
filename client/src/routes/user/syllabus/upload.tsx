@@ -179,7 +179,7 @@ export default function SyllabusUpload() {
         setImportantDates(extractedDates);
         setShowDates(true);
         setTimeout(() => {
-          navigate(`/syllabus-results/${syllabusId}`);
+          navigate(`/user/syllabus-results/${syllabusId}`);
         }, 3000);
       } else {
         toast.error("Failed to create syllabus record");

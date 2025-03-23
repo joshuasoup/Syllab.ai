@@ -109,7 +109,7 @@ export default function () {
       <p className="text-sm text-muted-foreground text-center mt-4">
         Remembered your password?{" "}
         <Link
-          to="/sign-in"
+          to="auth/sign-in"
           className="text-primary hover:underline font-medium"
         >
           Login →

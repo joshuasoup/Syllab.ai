@@ -17,31 +17,24 @@ import {
   redirect,
   useLocation,
   useOutletContext,
-  useNavigate
+  useNavigate,
+  useLoaderData,
+  LoaderFunctionArgs,
 } from "react-router-dom";
 import type { User } from "@/types/user";
 import type { Syllabus } from "@/types/syllabus";
 // Import logo as URL using Vite's special import syntax
-import logoUrl from '@images/syllabai_logo.png?url';
+import logoUrl from '@images/syllabai-logo.png';
 
-interface LoaderContext {
-  session: {
-    get: (key: string) => string | undefined;
-  };
+interface RootOutletContext {
+  user?: User;
 }
 
-interface LoaderArgs {
-  context: LoaderContext;
-}
+export type AuthOutletContext = RootOutletContext & {
+  user?: User;
+};
 
-export const loader = async ({ context }: LoaderArgs) => {
-  const { session } = context;
-
-  const userId = session?.get("user");
-  if (!userId) {
-    return redirect("/auth/sign-in");
-  }
-
+export const loader = async ({ request }: LoaderFunctionArgs) => {
   try {
     const user = await api.user.getCurrent();
     if (!user) {
@@ -51,14 +44,6 @@ export const loader = async ({ context }: LoaderArgs) => {
   } catch (error) {
     return redirect("/auth/sign-in");
   }
-};
-
-interface RootOutletContext {
-  user?: User;
-}
-
-export type AuthOutletContext = RootOutletContext & {
-  user?: User;
 };
 
 const UserMenu = ({ user }: { user: User }) => {
@@ -189,10 +174,10 @@ const SideBar = ({ user }: { user: User }) => {
               {syllabuses && syllabuses.map((syllabus: Syllabus) => (
                 <Link
                   key={syllabus.id}
-                  to={`/syllabus-results/${syllabus.id}`}
+                  to={`/user/syllabus-results/${syllabus.id}`}
                   className={`flex items-center px-3 py-1.5 text-xs font-normal rounded-sm transition-colors text-muted-foreground
                     ${
-                      location.pathname === `/syllabus-results/${syllabus.id}`
+                      location.pathname === `/user/syllabus-results/${syllabus.id}`
                         ? "bg-accent/50 text-accent-foreground"
                         : "hover:bg-accent/50 hover:text-accent-foreground"
                     }`}
@@ -209,7 +194,7 @@ const SideBar = ({ user }: { user: User }) => {
       <div className="mt-auto px-3 py-3 ">
         <UserMenu user={user} />
         <Link
-          to="/syllabus-upload"
+          to="/user/syllabus-upload"
           className="flex items-center w-full px-3 py-2 mb-3 mt-4 text-sm font-medium rounded-sm bg-blue-600 hover:bg-blue-700 text-white transition-colors"
         >
           <FileText className="mr-2 h-3 w-3" />
@@ -248,19 +233,23 @@ const SideBarMenuButtonDrawer = ({ user }: { user: User }) => {
   );
 };
 
-export default function ({ loaderData }: { loaderData: { user: User } }) {
-  const user = "user" in loaderData ? loaderData.user : undefined;
+export default function () {
+  const data = useLoaderData() as { user: User };
   const rootOutletContext = useOutletContext<RootOutletContext>();
+
+  if (!data.user) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen flex flex-col">
       <div className="flex flex-1">
-        <SideBarMenuButtonDrawer user={user!} />
+        <SideBarMenuButtonDrawer user={data.user} />
         <div className="hidden md:flex w-56 flex-col fixed inset-y-0">
-          <SideBar user={user!} />
+          <SideBar user={data.user} />
         </div>
         <div className="flex-1 md:ml-56">
-          <Outlet context={{ ...rootOutletContext, user }} />
+          <Outlet context={{ ...rootOutletContext, user: data.user }} />
         </div>
       </div>
       <Toaster richColors />
