@@ -1,9 +1,10 @@
 // web/routes/_user.syllabus-result.$id/index.tsx
 
 import React, { useState } from "react";
-import { useFindOne, useAction } from "@gadgetinc/react";
-import { useParams, Link, useNavigate } from "react-router";
-import { api } from "../../api";
+import { useParams, Link, useNavigate } from "react-router-dom";
+import { api } from "@/services/api";
+import { useFindOne } from "@/hooks/useFindOne";
+import type { Syllabus } from "@/types/syllabus";
 
 import {
   Card,
@@ -13,13 +14,12 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import DeleteSyllabusButton from "@/components/syllabus/DeleteSyllabusButton";
+import DeleteSyllabusButton from "@/components/features/syllabus/DeleteSyllabusButton";
 import { toast } from "sonner";
-import ChatbotDialog from "@/components/ChatbotDialog";
+import ChatbotDialog from "@/components/features/chat/ChatbotDialog";
 
 // 1. Import helpers and types
 import {
-  SyllabusData,
   formatDate,
   isEmpty,
   filterEmptyEntries,
@@ -42,23 +42,15 @@ export default function SyllabusResults() {
   const [activeTab, setActiveTab] = useState<string>("course-info");
 
   // Validate ID
-  const isValidId = id && /^\d+$/.test(id);
+  const isValidId = id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
 
-  // Gadget query
-  const [{ data: syllabus, fetching, error }] = useFindOne<SyllabusData>(
-    api.syllabus,
-    isValidId ? id : "0",
-    {
-      select: {
-        id: true,
-        title: true,
-        file: { url: true, fileName: true, mimeType: true },
-        processed: true,
-        highlights: true,
-        icsContent: true,
-        createdAt: true,
-        updatedAt: true,
-      },
+  // Fetch syllabus data
+  const [{ data: syllabus, fetching, error }] = useFindOne<Syllabus>(
+    () => api.syllabus.getById(id!),
+    { 
+      enabled: Boolean(id && isValidId),
+      maxRetries: 3,
+      retryDelay: 2000
     }
   );
 
@@ -74,7 +66,7 @@ export default function SyllabusResults() {
             <p>
               {!id
                 ? "No syllabus ID was provided in the URL."
-                : "The provided syllabus ID is invalid. IDs should contain only digits."}
+                : "The provided syllabus ID is invalid."}
             </p>
           </CardContent>
           <div className="p-4">
@@ -104,6 +96,13 @@ export default function SyllabusResults() {
   }
 
   if (error) {
+    // Handle authentication errors
+    if (error.message.includes('Authentication failed')) {
+      toast.error('Your session has expired. Please sign in again.');
+      navigate('/auth/sign-in');
+      return null;
+    }
+
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-4">
         <Card className="max-w-4xl bg-destructive/10 w-full">

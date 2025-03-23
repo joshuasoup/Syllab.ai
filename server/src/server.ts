@@ -25,10 +25,15 @@ app.use(cors({
   origin: process.env.CLIENT_URL || 'http://localhost:5173',
   credentials: true
 }));
-app.use(express.json());
 
-// Routes
+// Routes that handle file uploads should come before body parsers
 app.use('/api/syllabi', syllabusRoutes);
+
+// Body parsers for other routes
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
+
+// Other routes
 app.use('/api', chatRoutes);
 app.use('/api', authRoutes);
 app.use('/api', userRoutes);

@@ -34,7 +34,7 @@ export const DeleteSyllabusButton: React.FC<DeleteSyllabusButtonProps> = ({
     try {
       await deleteSyllabus(syllabusId);
       toast.success("Syllabus deleted successfully");
-      navigate("/syllabus-upload");
+      navigate("/user/syllabus-upload");
     } catch (error) {
       toast.error("Failed to delete syllabus");
       console.error("Delete syllabus error:", error);

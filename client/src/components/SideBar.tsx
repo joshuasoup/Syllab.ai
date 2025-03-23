@@ -1,3 +1,5 @@
+import React, { useState } from "react";
+import { Link, useLocation } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -8,53 +10,18 @@ import {
 import { Toaster } from "@/components/ui/sonner";
 import { ChevronDown, ChevronRight, FileText, LogOut, Menu, User as UserIcon, Folder } from "lucide-react";
 import CommandKBadge from "@/components/shared/CommandKBadge";
-import { useState } from "react";
 import { api } from "@/services/api";
 import { useFindMany } from "@/hooks/useFindMany";
-import {
-  Link,
-  Outlet,
-  redirect,
-  useLocation,
-  useOutletContext,
-  useNavigate,
-  useLoaderData,
-  LoaderFunctionArgs,
-} from "react-router-dom";
 import type { User } from "@/types/user";
 import type { Syllabus } from "@/types/syllabus";
-import { getSession } from "@/lib/supabase";
 // Import logo as URL using Vite's special import syntax
 import logoUrl from '@images/syllabai-logo.png';
 
-interface RootOutletContext {
-  user?: User;
+interface UserMenuProps {
+  user: User;
 }
 
-export type AuthOutletContext = RootOutletContext & {
-  user?: User;
-};
-
-export const loader = async ({ request }: LoaderFunctionArgs) => {
-  try {
-    const session = await getSession();
-    if (!session) {
-      return redirect("/auth/sign-in");
-    }
-
-    // Get the user data from our API
-    const user = await api.user.getCurrent();
-    if (!user) {
-      return redirect("/auth/sign-in");
-    }
-
-    return { user };
-  } catch (error) {
-    return redirect("/auth/sign-in");
-  }
-};
-
-const UserMenu = ({ user }: { user: User }) => {
+const UserMenu = ({ user }: UserMenuProps) => {
   const [userMenuActive, setUserMenuActive] = useState(false);
   const navigate = useNavigate();
  
@@ -122,7 +89,11 @@ const UserMenu = ({ user }: { user: User }) => {
   );
 };
 
-const SideBar = ({ user }: { user: User }) => {
+interface SideBarProps {
+  user: User;
+}
+
+export function SideBar({ user }: SideBarProps) {
   const location = useLocation();
   const [syllabusesOpen, setSyllabusesOpen] = useState(true);
 
@@ -214,9 +185,13 @@ const SideBar = ({ user }: { user: User }) => {
       </div>
     </div>
   );
-};
+}
 
-const SideBarMenuButtonDrawer = ({ user }: { user: User }) => {
+interface SideBarMenuButtonDrawerProps {
+  user: User;
+}
+
+const SideBarMenuButtonDrawer = ({ user }: SideBarMenuButtonDrawerProps) => {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
@@ -242,29 +217,4 @@ const SideBarMenuButtonDrawer = ({ user }: { user: User }) => {
       )}
     </div>
   );
-};
-
-export default function () {
-  const data = useLoaderData() as { user: User };
-  const rootOutletContext = useOutletContext<RootOutletContext>();
-
-  if (!data.user) {
-    return null;
-  }
-
-  return (
-    <div className="min-h-screen flex flex-col">
-      <div className="flex flex-1">
-        <SideBarMenuButtonDrawer user={data.user} />
-        <div className="hidden md:flex w-56 flex-col fixed inset-y-0">
-          <SideBar user={data.user} />
-        </div>
-        <div className="flex-1 md:ml-56">
-          <Outlet context={{ ...rootOutletContext, user: data.user }} />
-        </div>
-      </div>
-      <Toaster richColors />
-      <CommandKBadge />
-    </div>
-  );
-}
+}; 

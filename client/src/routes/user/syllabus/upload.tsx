@@ -1,11 +1,11 @@
-import React, { useState, useRef, DragEvent } from "react";
+import React, { useState, useRef, DragEvent, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAction } from "@/hooks/useAction";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { FileUp, Loader2, Calendar, Upload } from "lucide-react";
+import { FileUp, Loader2, Calendar, Upload, X } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "@/services/api";
 import { Progress } from "@/components/ui/progress";
@@ -41,6 +41,7 @@ export default function SyllabusUpload() {
   const [showDates, setShowDates] = useState(false);
   const [progress, setProgress] = useState(0);
   const [processingStage, setProcessingStage] = useState<string>("");
+  const [error, setError] = useState<string | null>(null);
 
   const [{ fetching: uploadFetching, error: uploadError }, uploadSyllabus] = useAction<File, Syllabus>(
     async (file: File) => {

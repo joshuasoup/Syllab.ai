@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { useFindMany, useGlobalAction } from "@gadgetinc/react";
-import { api } from "../api";
+import { useFindOne } from "@/hooks/useFindOne";
+import { api } from "@/services/api";
 import ReactMarkdown from "react-markdown";
 
 // Shadcn UI components
@@ -21,18 +21,21 @@ type ChatbotDialogProps = {
   trigger?: React.ReactNode;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
+  syllabusId: string;
 };
 
 const ChatbotDialog: React.FC<ChatbotDialogProps> = ({
   trigger = <Button>Ask about your syllabi</Button>,
   open: externalOpen,
   onOpenChange: externalOnOpenChange,
+  syllabusId,
 }) => {
   // State for chat functionality
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [question, setQuestion] = useState("");
   const [isOpen, setIsOpen] = useState(externalOpen || false);
   const [isCommandMode, setIsCommandMode] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   
@@ -77,20 +80,6 @@ const ChatbotDialog: React.FC<ChatbotDialogProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  // Fetch syllabi to check if processed syllabi exist
-  const [{ data: syllabi, fetching: fetchingSyllabi, error: syllabiError }] = useFindMany(api.syllabus, {
-    select: {
-      id: true,
-      processed: true,
-    },
-    filter: {
-      processed: { equals: true }
-    }
-  });
-
-  // Chat with Syllabi action
-  const [{ fetching: chatFetching, error: chatError }, chat] = useGlobalAction(api.chatWithSyllabi);
-
   // Scroll to bottom when messages update
   useEffect(() => {
     if (scrollAreaRef.current) {
@@ -99,12 +88,9 @@ const ChatbotDialog: React.FC<ChatbotDialogProps> = ({
     }
   }, [messages]);
 
-  // Check if there are processed syllabi available
-  const hasProcessedSyllabi = syllabi && syllabi.length > 0;
-
   // Handle sending a message
   const handleSendMessage = async () => {
-    if (!question.trim() || chatFetching || !hasProcessedSyllabi) return;
+    if (!question.trim() || isLoading || !syllabusId) return;
 
     // Add user message to chat
     const userMessage: ChatMessage = {
@@ -116,19 +102,18 @@ const ChatbotDialog: React.FC<ChatbotDialogProps> = ({
     
     setMessages((prev) => [...prev, userMessage]);
     setQuestion("");
+    setIsLoading(true);
 
     try {
-      // Call the chatWithSyllabi action (without syllabusId)
-      const result = await chat({
-        query: question,
-      });
-
+      // Call the chat API
+      const response = await api.chat.sendMessage(syllabusId, question);
+      
       // Add AI response to chat
-      if (result.data) {
+      if (response && typeof response === 'string') {
         const aiMessage: ChatMessage = {
           id: `ai-${Date.now()}`,
           sender: "ai",
-          content: typeof result.data === 'string' ? result.data : result.data?.response || JSON.stringify(result.data),
+          content: response,
           timestamp: new Date(),
         };
         setMessages((prev) => [...prev, aiMessage]);
@@ -151,6 +136,8 @@ const ChatbotDialog: React.FC<ChatbotDialogProps> = ({
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, errorMessage]);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -166,9 +153,9 @@ const ChatbotDialog: React.FC<ChatbotDialogProps> = ({
       >
         {!isCommandMode && (
           <DialogHeader>
-            <DialogTitle>Chat with your Syllabi</DialogTitle>
+            <DialogTitle>Chat with your Syllabus</DialogTitle>
             <DialogDescription>
-              Ask questions about all your syllabi and get AI-powered answers.
+              Ask questions about your syllabus and get AI-powered answers.
             </DialogDescription>
           </DialogHeader>
         )}
@@ -179,24 +166,6 @@ const ChatbotDialog: React.FC<ChatbotDialogProps> = ({
               <div className="bg-muted text-xs rounded px-2 py-1 mr-2 font-mono">⌘K</div>
               <h4 className="text-sm font-medium">Syllabus Assistant</h4>
             </div>
-          </div>
-        )}
-
-        {!hasProcessedSyllabi && !fetchingSyllabi && (
-          <div className="mb-4 p-3 bg-yellow-50 text-yellow-800 rounded-md">
-            <p className="text-sm">You need to upload and process at least one syllabus before you can chat.</p>
-          </div>
-        )}
-        
-        {fetchingSyllabi && (
-          <div className="mb-4 p-3 bg-gray-50 rounded-md">
-            <p className="text-sm">Loading syllabi...</p>
-          </div>
-        )}
-        
-        {syllabiError && (
-          <div className="mb-4 p-3 bg-red-50 text-red-800 rounded-md">
-            <p className="text-sm">Error loading syllabi</p>
           </div>
         )}
 
@@ -282,7 +251,7 @@ const ChatbotDialog: React.FC<ChatbotDialogProps> = ({
         >
           {messages.length === 0 ? (
             <div className="text-center text-gray-500 h-full flex items-center justify-center">
-              <p>Start a conversation by asking a question about your syllabi</p>
+              <p>Start a conversation by asking a question about your syllabus</p>
             </div>
           ) : (
             <div className="space-y-2">
@@ -319,7 +288,7 @@ const ChatbotDialog: React.FC<ChatbotDialogProps> = ({
                   </div>
                 </div>
               ))}
-              {chatFetching && (
+              {isLoading && (
                 <div className="flex justify-start">
                   <div className="max-w-[80%] p-3 rounded-lg bg-muted">
                     <p className="text-sm">AI is thinking...</p>
@@ -339,7 +308,7 @@ const ChatbotDialog: React.FC<ChatbotDialogProps> = ({
                 size="sm"
                 className="text-xs"
                 onClick={() => setQuestion("What are my upcoming assignments?")}
-                disabled={chatFetching}
+                disabled={isLoading}
               >
                 Upcoming assignments
               </Button>
@@ -347,8 +316,8 @@ const ChatbotDialog: React.FC<ChatbotDialogProps> = ({
                 variant="outline"
                 size="sm"
                 className="text-xs"
-                onClick={() => setQuestion("What are the office hours for my courses?")}
-                disabled={chatFetching}
+                onClick={() => setQuestion("What are the office hours?")}
+                disabled={isLoading}
               >
                 Office hours
               </Button>
@@ -356,8 +325,8 @@ const ChatbotDialog: React.FC<ChatbotDialogProps> = ({
                 variant="outline"
                 size="sm"
                 className="text-xs"
-                onClick={() => setQuestion("What are the exam dates for all my classes?")}
-                disabled={chatFetching}
+                onClick={() => setQuestion("What are the exam dates?")}
+                disabled={isLoading}
               >
                 Exam dates
               </Button>
@@ -369,7 +338,7 @@ const ChatbotDialog: React.FC<ChatbotDialogProps> = ({
         <div className="flex items-center gap-2">
           <Input
             ref={inputRef}
-            placeholder={isCommandMode ? "Ask about your courses..." : "Type your question here..."}
+            placeholder={isCommandMode ? "Ask about your course..." : "Type your question here..."}
             value={question}
             onChange={(e) => setQuestion(e.target.value)}
             onKeyDown={(e) => {
@@ -381,21 +350,16 @@ const ChatbotDialog: React.FC<ChatbotDialogProps> = ({
                 handleOpenChange(false);
               }
             }}
-            disabled={chatFetching || !hasProcessedSyllabi || fetchingSyllabi}
+            disabled={isLoading}
             className={`flex-1 ${isCommandMode ? "border-primary focus-visible:ring-0 focus-visible:ring-offset-0" : ""}`}
           />
           <Button 
             onClick={() => void handleSendMessage()}
-            disabled={!question.trim() || chatFetching || !hasProcessedSyllabi || fetchingSyllabi}
+            disabled={!question.trim() || isLoading}
           >
             Send
           </Button>
         </div>
-        {chatError && (
-          <p className="text-sm text-red-500 mt-2">
-            Error: {typeof chatError === "string" ? chatError : "Failed to send message"}
-          </p>
-        )}
       </DialogContent>
     </Dialog>
   );

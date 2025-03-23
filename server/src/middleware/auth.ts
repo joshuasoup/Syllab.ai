@@ -21,6 +21,7 @@ declare global {
 export const auth = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const token = req.headers.authorization?.split(' ')[1];
+    console.log('Auth middleware - Token received:', token ? 'Yes' : 'No');
     
     if (!token) {
       res.status(401).json({ error: 'Authentication required' });
@@ -28,6 +29,12 @@ export const auth = async (req: Request, res: Response, next: NextFunction) => {
     }
     
     const { data, error } = await supabase.auth.getUser(token);
+    console.log('Auth middleware - Supabase response:', {
+      hasData: !!data,
+      hasUser: !!data?.user,
+      userId: data?.user?.id,
+      error: error?.message
+    });
     
     if (error || !data.user || !data.user.id) {
       res.status(401).json({ error: 'Invalid token or missing user ID' });
@@ -36,6 +43,10 @@ export const auth = async (req: Request, res: Response, next: NextFunction) => {
     
     // Assign user to request
     (req as any).user = data.user;
+    console.log('Auth middleware - User assigned to request:', {
+      userId: data.user.id,
+      email: data.user.email
+    });
     
     next();
   } catch (error) {
