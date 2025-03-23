@@ -145,7 +145,7 @@ export default function() {
                 }}
                 asChild
               >
-                <Link to="/sign-in">See It in Action :)</Link>
+                <Link to="auth/sign-in">See It in Action :)</Link>
               </Button>
             </div>
           </div>
@@ -260,7 +260,7 @@ export default function() {
                   }}
                   asChild
                 >
-                  <Link to="/sign-up">Try SyllabAI Free</Link>
+                  <Link to="auth/sign-up">Try SyllabAI Free</Link>
                 </Button>
                 <p className="mt-4 text-slate-600 text-sm">No credit card required. Start organizing your courses today.</p>
               </div>
