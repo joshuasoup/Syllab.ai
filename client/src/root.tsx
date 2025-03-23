@@ -1,10 +1,10 @@
 import React from "react";
-import { Outlet } from "react-router-dom";
+import { Outlet, redirect } from "react-router-dom";
 import { Suspense } from "react";
 import "./app.css";
 import { api } from "@/services/api";
 import { User } from "@/types/user";
-import { redirect } from "react-router-dom";
+import { getSession } from "@/lib/supabase";
 
 export const links = () => [
   { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Rubik+Mono+One&family=Roboto:wght@400;700&display=swap" },
@@ -19,10 +19,14 @@ export const meta = () => [
 
 export const loader = async () => {
   try {
-    const user = await api.user.getCurrent();
-    return { user };
+    const session = await getSession();
+    if (session) {
+      const user = await api.user.getCurrent();
+      return { user };
+    }
+    return { user: null };
   } catch (error) {
-    // Don't redirect here, let the protected routes handle that
+    // If there's an error getting the session or user data, treat as not signed in
     return { user: null };
   }
 };

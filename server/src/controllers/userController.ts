@@ -13,13 +13,11 @@ export const getCurrentUser = async (req: Request, res: Response) => {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    const { data: user, error } = await supabase
-      .from('users')
-      .select('*')
-      .eq('id', userId)
-      .single();
+    // Get the user's session to access their data
+    const { data: { user }, error } = await supabase.auth.getUser(req.headers.authorization?.split(' ')[1] || '');
 
     if (error) {
+      console.error('Supabase error:', error);
       throw error;
     }
 
@@ -39,19 +37,17 @@ export const updateUserProfile = async (req: Request, res: Response) => {
 
     const { firstName, lastName, profilePicture } = req.body;
 
-    const { data: user, error } = await supabase
-      .from('users')
-      .update({
+    const { data: { user }, error } = await supabase.auth.updateUser({
+      data: {
         firstName,
         lastName,
         profilePicture,
         updatedAt: new Date().toISOString(),
-      })
-      .eq('id', userId)
-      .select()
-      .single();
+      }
+    });
 
     if (error) {
+      console.error('Supabase error:', error);
       throw error;
     }
 

@@ -1,19 +1,22 @@
 import { Outlet, redirect, useOutletContext } from "react-router";
-import type { RootOutletContext } from "../root";
-import type { Route } from "./+types/_anon";
+import { getSession } from "@/lib/supabase";
+import type { LoaderFunctionArgs } from "react-router-dom";
 
-export const loader = async ({ context }: Route.LoaderArgs) => {
-  const { session, gadgetConfig } = context;
+interface RootOutletContext {
+  user?: any;
+}
 
-  const signedIn = !!session?.get("user");
-
-  if (signedIn) {
-    return redirect(
-      gadgetConfig.authentication!.redirectOnSuccessfulSignInPath!
-    );
+export const loader = async ({ request }: LoaderFunctionArgs) => {
+  try {
+    const session = await getSession();
+    if (session) {
+      return redirect('/user/syllabus-upload');
+    }
+    return null;
+  } catch (error) {
+    // If there's an error getting the session, we'll just show the anon pages
+    return null;
   }
-
-  return {};
 };
 
 export default function () {

@@ -1,5 +1,7 @@
 import { User } from '@/types/user';
 import { Syllabus } from '@/types/syllabus';
+import { getSession } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase';
 
 // Base URL for your backend API
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
@@ -10,14 +12,41 @@ async function fetchApi<T>(
   options: RequestInit = {}
 ): Promise<T> {
   try {
+    // Get the current session
+    const session = await getSession();
+    
+    // Add the authorization header if we have a session
+    const headers = new Headers({
+      'Content-Type': 'application/json',
+      ...options.headers,
+    });
+    
+    if (session?.access_token) {
+      headers.set('Authorization', `Bearer ${session.access_token}`);
+    }
+
     const response = await fetch(`${BASE_URL}${endpoint}`, {
       ...options,
       credentials: 'include',
-      headers: {
-        'Content-Type': 'application/json',
-        ...options.headers,
-      },
+      headers,
     });
+
+    // If we get a 401, try to refresh the session
+    if (response.status === 401) {
+      const { data: { session: newSession }, error } = await supabase.auth.refreshSession();
+      if (newSession?.access_token) {
+        headers.set('Authorization', `Bearer ${newSession.access_token}`);
+        const retryResponse = await fetch(`${BASE_URL}${endpoint}`, {
+          ...options,
+          credentials: 'include',
+          headers,
+        });
+        if (!retryResponse.ok) {
+          throw new Error(`API error: ${retryResponse.statusText}`);
+        }
+        return retryResponse.json();
+      }
+    }
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => null);
@@ -72,28 +101,28 @@ export const api = {
     upload: async (file: File): Promise<Syllabus> => {
       const formData = new FormData();
       formData.append('file', file);
-      return fetchApi<Syllabus>('/syllabus', {
+      return fetchApi<Syllabus>('/syllabi', {
         method: 'POST',
         body: formData,
         headers: {},
       });
     },
-    getAll: () => fetchApi<Syllabus[]>('/syllabus'),
-    getById: (id: string) => fetchApi<Syllabus>(`/syllabus/${id}`),
+    getAll: () => fetchApi<Syllabus[]>('/syllabi'),
+    getById: (id: string) => fetchApi<Syllabus>(`/syllabi/${id}`),
     delete: (id: string) =>
-      fetchApi(`/syllabus/${id}`, { method: 'DELETE' }),
+      fetchApi(`/syllabi/${id}`, { method: 'DELETE' }),
     getResults: (id: string) =>
-      fetchApi<{ results: any }>(`/syllabus/${id}/results`),
+      fetchApi<{ results: any }>(`/syllabi/${id}/results`),
     process: async (id: string): Promise<Syllabus> =>
-      fetchApi<Syllabus>(`/syllabus/${id}/process`, { method: 'POST' }),
+      fetchApi<Syllabus>(`/syllabi/${id}/process`, { method: 'POST' }),
   },
   chat: {
     sendMessage: (syllabusId: string, message: string) =>
-      fetchApi(`/syllabus/${syllabusId}/chat`, {
+      fetchApi(`/syllabi/${syllabusId}/chat`, {
         method: 'POST',
         body: JSON.stringify({ message }),
       }),
     getHistory: (syllabusId: string) =>
-      fetchApi(`/syllabus/${syllabusId}/chat`),
+      fetchApi(`/syllabi/${syllabusId}/chat`),
   },
 }; 
