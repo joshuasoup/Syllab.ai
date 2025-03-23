@@ -7,6 +7,7 @@ import { api } from "@/services/api";
 import { useState, useEffect, FormEvent } from "react";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { supabase } from "@/lib/supabase"; // Import your Supabase client
 
 // Define API error interface
 interface ApiError {
@@ -169,6 +170,32 @@ export default function() {
     }
   };
 
+  const handleGoogleSignUp = async (e: React.MouseEvent<HTMLAnchorElement>) => {
+    e.preventDefault();
+    
+    try {
+      setIsSubmitting(true);
+      
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback${search ? `?${search.substring(1)}` : ''}`,
+        }
+      });
+      
+      if (error) throw error;
+    } catch (error) {
+      console.error('Error signing in with Google:', error);
+      setGeneralError(
+        error instanceof Error 
+          ? error.message 
+          : 'Failed to connect to Google. Please try again.'
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   // Determine what message to show - prioritize errors over success
   const showDuplicateEmailError = Boolean(duplicateEmailError);
   const showGeneralError = !showDuplicateEmailError && Boolean(generalError);
@@ -320,7 +347,8 @@ export default function() {
                 <span className="text-muted-foreground text-sm font-medium">OR</span>
                 <Separator className="flex-1" />
               </div>
-
+              
+              {/* Modified Google sign-up button */}
               <Button
                 variant="outline"
                 size="lg"
@@ -328,7 +356,10 @@ export default function() {
                 asChild
                 disabled={isSubmitting || verifiedSuccess}
               >
-                <a href={`/auth/google/start?mode=signup${search ? `&${search.substring(1)}` : ''}`}>
+                <a 
+                  href="#" 
+                  onClick={handleGoogleSignUp}
+                >
                   <svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24" className="mr-2 h-4 w-4">
                     <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
                     <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
