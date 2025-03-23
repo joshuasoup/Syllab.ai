@@ -91,4 +91,28 @@ export const signOut = async (req: Request, res: Response) => {
     console.error('Sign out error:', error);
     res.status(500).json({ message: 'Error signing out' });
   }
+};
+
+export const googleAuth = async (req: Request, res: Response) => {
+  try {
+    console.log('Google auth request received');
+    const { token } = req.body;
+
+    // Sign in with Google token
+    const { data, error } = await supabase.auth.signInWithIdToken({
+      provider: 'google',
+      token,
+    });
+
+    if (error) {
+      console.error('Google auth error:', error);
+      return res.status(401).json({ message: error.message });
+    }
+
+    console.log('Google auth successful:', { userId: data.user?.id });
+    res.json({ user: data.user });
+  } catch (error) {
+    console.error('Google auth error:', error);
+    res.status(500).json({ message: 'Error authenticating with Google' });
+  }
 }; 

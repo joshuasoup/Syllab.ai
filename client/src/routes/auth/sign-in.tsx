@@ -6,6 +6,7 @@ import { Separator } from "@/components/ui/separator";
 import { useForm } from "@/hooks/useForm";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { api } from "@/services/api";
+import { supabase } from "@/lib/supabase";
 
 interface SignInForm {
   email: string;
@@ -21,14 +22,29 @@ export default function() {
     submit,
     formState: { errors, isSubmitting },
   } = useForm<SignInForm>(
-    (data) => api.auth.signIn(data.email, data.password),
+    async (data) => {
+      // Sign in with our API
+      const response = await api.auth.signIn(data.email, data.password);
+      
+      // Sign in with Supabase to get the session
+      const { error: supabaseError } = await supabase.auth.signInWithPassword({
+        email: data.email,
+        password: data.password,
+      });
+      
+      if (supabaseError) {
+        throw supabaseError;
+      }
+      
+      return response;
+    },
     {
       onSuccess: () => navigate('/user/syllabus-upload'),
     }
   );
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
+    <div className="flex items-center justify-center p-4">
       <div className="w-[420px]">
         <div className="space-y-8">
           <Card className="p-8">

@@ -1,8 +1,10 @@
 import { Button } from "@/components/ui/button";
-import { Link } from "react-router-dom";
+import { Link, redirect, useNavigate } from "react-router-dom";
 import { useEffect } from "react";
 import { Navbar } from "@/components/layout/Navbar";
 import { LogoMarquee } from "@/components/features/LogoMarquee";
+import { getSession } from "@/lib/supabase";
+import { LoaderFunctionArgs } from "react-router-dom";
 
 // Gradient style for SyllabAI text
 const syllabAIGradientStyle = {
@@ -72,7 +74,42 @@ const FullPageBackground = ({ children }: { children: React.ReactNode; }) => {
   );
 };
 
+export const loader = async ({ request }: LoaderFunctionArgs) => {
+  try {
+    const session = await getSession();
+    console.log('Landing page loader - Session check:', session?.user?.email);
+    
+    if (session?.user) {
+      console.log('User is authenticated, redirecting to syllabus upload');
+      return redirect('/user/syllabus-upload');
+    }
+    
+    console.log('No active session found, showing landing page');
+    return null;
+  } catch (error) {
+    console.error('Error checking session in landing page loader:', error);
+    // If there's an error getting the session, we'll just show the landing page
+    return null;
+  }
+};
+
 export default function() {
+  const navigate = useNavigate();
+
+  const handleActionClick = async () => {
+    try {
+      const session = await getSession();
+      if (session?.user) {
+        navigate('/user/syllabus-upload');
+      } else {
+        navigate('/auth/sign-in');
+      }
+    } catch (error) {
+      console.error('Error checking session:', error);
+      navigate('/auth/sign-in');
+    }
+  };
+
   return (
     <FullPageBackground>
       <Navbar />
@@ -143,9 +180,9 @@ export default function() {
                 style={{
                   background: "linear-gradient(to right, #2563eb, #9333ea)",
                 }}
-                asChild
+                onClick={handleActionClick}
               >
-                <Link to="auth/sign-in">See It in Action :)</Link>
+                See It in Action :)
               </Button>
             </div>
           </div>

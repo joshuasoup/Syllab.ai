@@ -193,7 +193,7 @@ export default function() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
+    <div className="flex items-center justify-center p-4">
       <div className="w-[420px]">
         <div className="space-y-8">
           <Card className="p-8">
@@ -241,7 +241,6 @@ export default function() {
                     value={email}
                     onChange={(e) => {
                       setEmail(e.target.value);
-                      // Clear duplicate email error when user changes email
                       if (duplicateEmailError) setDuplicateEmailError("");
                     }}
                     className={`mt-1 ${showDuplicateEmailError ? "border-red-500" : ""}`}
@@ -267,7 +266,6 @@ export default function() {
                   )}
                 </div>
 
-                {/* Display duplicate email error */}
                 {showDuplicateEmailError && (
                   <Alert variant="destructive" className="py-3 border-2 border-red-500 bg-red-50">
                     <AlertTitle className="text-red-700">Email Already Exists</AlertTitle>
@@ -277,7 +275,6 @@ export default function() {
                   </Alert>
                 )}
 
-                {/* Display general errors */}
                 {showGeneralError && (
                   <Alert variant="destructive">
                     <AlertTitle>Error</AlertTitle>
@@ -287,7 +284,6 @@ export default function() {
                   </Alert>
                 )}
 
-                {/* Display success message if signup was successful and there are no errors */}
                 {showSuccessMessage && (
                   <Alert className="bg-green-50 border-green-200">
                     <AlertTitle className="text-green-800">Success!</AlertTitle>
@@ -348,7 +344,7 @@ export default function() {
           <p className="text-sm text-muted-foreground text-center">
             Already have an account?{" "}
             <Link
-              to="auth/sign-in"
+              to="/auth/sign-in"
               className="font-medium text-primary hover:underline"
             >
               Login →

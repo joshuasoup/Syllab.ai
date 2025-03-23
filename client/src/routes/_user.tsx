@@ -23,6 +23,7 @@ import {
 } from "react-router-dom";
 import type { User } from "@/types/user";
 import type { Syllabus } from "@/types/syllabus";
+import { getSession } from "@/lib/supabase";
 // Import logo as URL using Vite's special import syntax
 import logoUrl from '@images/syllabai-logo.png';
 
@@ -36,10 +37,17 @@ export type AuthOutletContext = RootOutletContext & {
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   try {
+    const session = await getSession();
+    if (!session) {
+      return redirect("/auth/sign-in");
+    }
+
+    // Get the user data from our API
     const user = await api.user.getCurrent();
     if (!user) {
       return redirect("/auth/sign-in");
     }
+
     return { user };
   } catch (error) {
     return redirect("/auth/sign-in");
