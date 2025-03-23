@@ -6,33 +6,66 @@ interface UseFindOneResult<T> {
   fetching: boolean;
 }
 
+interface UseFindOneOptions {
+  enabled?: boolean;
+  maxRetries?: number;
+  retryDelay?: number;
+}
+
 export function useFindOne<T>(
   fetchFn: () => Promise<T>,
-  options: { enabled?: boolean } = {}
+  options: UseFindOneOptions = {}
 ): [UseFindOneResult<T>] {
   const [data, setData] = useState<T | null>(null);
   const [error, setError] = useState<Error | null>(null);
   const [fetching, setFetching] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
 
   useEffect(() => {
-    if (options.enabled === false) {
+    // Don't fetch if disabled or if we already have data
+    if (options.enabled === false || data !== null) {
       return;
     }
+
+    let timeoutId: NodeJS.Timeout;
 
     const fetchData = async () => {
       setFetching(true);
       try {
         const result = await fetchFn();
         setData(result);
+        setError(null);
+        setRetryCount(0); // Reset retry count on success
       } catch (err) {
-        setError(err instanceof Error ? err : new Error('An error occurred'));
+        const error = err instanceof Error ? err : new Error('An error occurred');
+        setError(error);
+        
+        // Don't retry if it's an authentication error
+        if (error.message.includes('401') || error.message.includes('unauthorized')) {
+          return;
+        }
+        
+        // Handle retries for other errors
+        if (retryCount < (options.maxRetries || 3)) {
+          const delay = (options.retryDelay || 1000) * Math.pow(2, retryCount);
+          timeoutId = setTimeout(() => {
+            setRetryCount(prev => prev + 1);
+          }, delay);
+        }
       } finally {
         setFetching(false);
       }
     };
 
     fetchData();
-  }, [fetchFn, options.enabled]);
+
+    // Cleanup function to clear any pending timeouts
+    return () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    };
+  }, [fetchFn, options.enabled, retryCount, data]);
 
   return [{ data, error, fetching }];
 } 

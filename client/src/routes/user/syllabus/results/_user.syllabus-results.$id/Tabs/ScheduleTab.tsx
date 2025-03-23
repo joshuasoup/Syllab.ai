@@ -3,7 +3,7 @@
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { filterEmptyEntries, isEmpty } from "../SyllabusHelpers";
-import { linkify, toTitleCase } from "@/components/syllabus/SubComponents";
+import { linkify, toTitleCase } from "@/components/features/syllabus/SubComponents";
 
 interface ScheduleTabProps {
   classSchedule: any;

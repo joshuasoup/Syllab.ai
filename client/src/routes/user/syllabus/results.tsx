@@ -1,5 +1,5 @@
 import React from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { useFindOne } from "@/hooks/useFindOne";
 import { api } from "@/services/api";
 import { Card, CardContent } from "@/components/ui/card";
@@ -11,9 +11,15 @@ import type { Syllabus, Assessment, Deadline } from "@/types/syllabus";
 
 export default function SyllabusResults() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  
   const [{ data: syllabus, fetching, error }] = useFindOne<Syllabus>(
     () => api.syllabus.getById(id!),
-    { enabled: !!id }
+    { 
+      enabled: !!id,
+      maxRetries: 3,
+      retryDelay: 2000
+    }
   );
 
   if (fetching) {
@@ -26,18 +32,34 @@ export default function SyllabusResults() {
 
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen">
-        <p className="text-red-600 mb-4">Error loading syllabus</p>
-        <Button onClick={() => window.location.reload()}>Try again</Button>
+      <div className="flex flex-col items-center justify-center min-h-screen p-4">
+        <Card className="max-w-md w-full">
+          <CardContent className="pt-6">
+            <div className="text-center">
+              <p className="text-red-600 mb-4">Unable to load syllabus</p>
+              <p className="text-gray-600 mb-6">The server might be temporarily unavailable. Please try again later.</p>
+              <div className="flex gap-4 justify-center">
+                <Button onClick={() => navigate('/syllabus-upload')}>Back to Dashboard</Button>
+                <Button variant="outline" onClick={() => window.location.reload()}>Try Again</Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
   if (!syllabus) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen">
-        <p className="text-gray-600 mb-4">Syllabus not found</p>
-        <Button onClick={() => window.history.back()}>Go back</Button>
+      <div className="flex flex-col items-center justify-center min-h-screen p-4">
+        <Card className="max-w-md w-full">
+          <CardContent className="pt-6">
+            <div className="text-center">
+              <p className="text-gray-600 mb-4">Syllabus not found</p>
+              <Button onClick={() => navigate('/syllabus-upload')}>Back to Dashboard</Button>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     );
   }

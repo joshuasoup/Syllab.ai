@@ -1,7 +1,7 @@
 // web/routes/_user.syllabus-results.$id/SyllabusHeader.tsx
 
 import React from "react";
-import { Link } from "react-router";
+import { Link } from "react-router-dom";
 import { ArrowLeft, Download, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatDate } from "./SyllabusHelpers";

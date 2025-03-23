@@ -12,50 +12,74 @@ async function fetchApi<T>(
   options: RequestInit = {}
 ): Promise<T> {
   try {
+    console.log(`[API Request] Starting request to: ${endpoint}`);
+    
     // Get the current session
     const session = await getSession();
+    console.log('[API Request] Session status:', session ? 'Found' : 'Not found');
     
     // Add the authorization header if we have a session
     const headers = new Headers({
-      'Content-Type': 'application/json',
       ...options.headers,
     });
     
+    // Only set Content-Type if the body is not FormData
+    if (!(options.body instanceof FormData)) {
+      headers.set('Content-Type', 'application/json');
+    }
+    
     if (session?.access_token) {
       headers.set('Authorization', `Bearer ${session.access_token}`);
+      console.log('[API Request] Added authorization header');
     }
 
+    console.log('[API Request] Making fetch request to:', `${BASE_URL}${endpoint}`);
     const response = await fetch(`${BASE_URL}${endpoint}`, {
       ...options,
       credentials: 'include',
       headers,
     });
 
+    console.log('[API Request] Response status:', response.status);
+
     // If we get a 401, try to refresh the session
     if (response.status === 401) {
-      const { data: { session: newSession }, error } = await supabase.auth.refreshSession();
-      if (newSession?.access_token) {
-        headers.set('Authorization', `Bearer ${newSession.access_token}`);
-        const retryResponse = await fetch(`${BASE_URL}${endpoint}`, {
-          ...options,
-          credentials: 'include',
-          headers,
-        });
-        if (!retryResponse.ok) {
-          throw new Error(`API error: ${retryResponse.statusText}`);
-        }
-        return retryResponse.json();
+      console.log('[API Request] Got 401, attempting to refresh session');
+      const { data: { session: newSession }, error: refreshError } = await supabase.auth.refreshSession();
+      
+      // If refresh fails, throw an auth error
+      if (refreshError || !newSession?.access_token) {
+        console.error('[API Request] Session refresh failed:', refreshError);
+        throw new Error('Authentication failed. Please sign in again.');
       }
+
+      console.log('[API Request] Session refreshed successfully');
+      headers.set('Authorization', `Bearer ${newSession.access_token}`);
+      const retryResponse = await fetch(`${BASE_URL}${endpoint}`, {
+        ...options,
+        credentials: 'include',
+        headers,
+      });
+
+      if (!retryResponse.ok) {
+        const errorData = await retryResponse.json().catch(() => null);
+        console.error('[API Request] Retry failed:', errorData);
+        throw new Error(errorData?.message || `API error: ${retryResponse.statusText}`);
+      }
+      return retryResponse.json();
     }
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => null);
+      console.error('[API Request] Request failed:', errorData);
       throw new Error(errorData?.message || `API error: ${response.statusText}`);
     }
 
-    return response.json();
+    const data = await response.json();
+    console.log('[API Request] Request successful');
+    return data;
   } catch (error) {
-    console.error('API Request failed:', {
+    console.error('[API Request] Request failed:', {
       url: `${BASE_URL}${endpoint}`,
       error: error instanceof Error ? error.message : 'Unknown error',
     });
@@ -76,8 +100,32 @@ export const api = {
         method: 'POST',
         body: JSON.stringify({ email, password, firstName, lastName }),
       }),
-    signOut: () =>
-      fetchApi('/auth/sign-out', { method: 'POST' }),
+    signOut: async () => {
+      try {
+        // First sign out from our backend
+        await fetchApi('/auth/sign-out', { method: 'POST' });
+        
+        // Sign out from Supabase
+        await supabase.auth.signOut();
+        
+        // Clear any remaining auth data from localStorage
+        localStorage.removeItem('sb-access-token');
+        localStorage.removeItem('sb-refresh-token');
+        
+        // Clear all cookies
+        document.cookie.split(';').forEach(cookie => {
+          const [name] = cookie.split('=');
+          document.cookie = `${name.trim()}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+        });
+        
+        // Force reload the page to clear any remaining state
+        window.location.href = '/auth/sign-in';
+      } catch (error) {
+        console.error('Error during sign out:', error);
+        // Even if there's an error, try to clear everything and redirect
+        window.location.href = '/auth/sign-in';
+      }
+    },
     resetPassword: (email: string) =>
       fetchApi('/auth/reset-password', {
         method: 'POST',
@@ -108,7 +156,10 @@ export const api = {
       });
     },
     getAll: () => fetchApi<Syllabus[]>('/syllabi'),
-    getById: (id: string) => fetchApi<Syllabus>(`/syllabi/${id}`),
+    getById: (id: string) => {
+      console.log('[API] Fetching syllabus by ID:', id);
+      return fetchApi<Syllabus>(`/syllabi/${id}`);
+    },
     delete: (id: string) =>
       fetchApi(`/syllabi/${id}`, { method: 'DELETE' }),
     getResults: (id: string) =>
@@ -118,11 +169,11 @@ export const api = {
   },
   chat: {
     sendMessage: (syllabusId: string, message: string) =>
-      fetchApi(`/syllabi/${syllabusId}/chat`, {
+      fetchApi<{ response: string }>(`/syllabi/${syllabusId}/chat`, {
         method: 'POST',
         body: JSON.stringify({ message }),
-      }),
+      }).then(data => data.response),
     getHistory: (syllabusId: string) =>
-      fetchApi(`/syllabi/${syllabusId}/chat`),
+      fetchApi<{ messages: Array<{ role: string; content: string }> }>(`/syllabi/${syllabusId}/chat`),
   },
 }; 

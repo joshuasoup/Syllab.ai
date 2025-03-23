@@ -4,7 +4,7 @@ import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Info, Youtube, Play } from "lucide-react";
 import { filterEmptyEntries, isEmpty } from "../SyllabusHelpers";
-import { linkify, toTitleCase } from "@/components/syllabus/SubComponents";
+import { linkify, toTitleCase } from "@/components/features/syllabus/SubComponents";
 import { Button } from "@/components/ui/button";
 
 // Helper function to check if a field is one of the important fields that need special styling

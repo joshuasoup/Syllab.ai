@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { BookOpen } from "lucide-react";
 import { filterEmptyEntries, isEmpty } from "../SyllabusHelpers";
-import { toTitleCase, linkify } from "@/components/syllabus/SubComponents";
+import { toTitleCase, linkify } from "@/components/features/syllabus/SubComponents";
 
 interface ResourcesTabProps {
   textbooks?: any;

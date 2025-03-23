@@ -3,8 +3,8 @@
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { filterEmptyEntries, isEmpty } from "../SyllabusHelpers";
-import { TimelineItem, extractDateFromText } from "@/components/syllabus/SubComponents";
-import { toTitleCase, linkify } from "@/components/syllabus/SubComponents";
+import { TimelineItem, extractDateFromText } from "@/components/features/syllabus/SubComponents";
+import { toTitleCase, linkify } from "@/components/features/syllabus/SubComponents";
 
 interface PoliciesTabProps {
   policies?: any;

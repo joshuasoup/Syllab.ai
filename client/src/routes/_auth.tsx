@@ -1,4 +1,4 @@
-import { Outlet, redirect } from "react-router-dom";
+import { Outlet, redirect, Link } from "react-router-dom";
 import { Toaster } from "@/components/ui/sonner";
 import logoUrl from '@images/syllabai-logo.png';
 import { getSession } from "@/lib/supabase";
@@ -25,11 +25,13 @@ export default function AuthLayout() {
     <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gray-50">
       <div className="w-full max-w-md">
         <div className="flex justify-center mb-6">
-          <img 
-            src={logoUrl} 
-            alt="SyllabAI Logo" 
-            className="w-12 h-12 object-contain"
-          />
+          <Link to="/">
+            <img 
+              src={logoUrl} 
+              alt="SyllabAI Logo" 
+              className="w-12 h-12 object-contain"
+            />
+          </Link>
         </div>
         <Outlet />
       </div>

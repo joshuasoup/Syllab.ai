@@ -8,7 +8,7 @@ import {
   DateItem,
   GradeItem,
   extractDateFromText,
-} from "@/components/syllabus/SubComponents";
+} from "@/components/features/syllabus/SubComponents";
 import { getNumberedAssessmentName } from "../SyllabusHelpers";
 
 // Function to format dates in the "Oct. 15, 2023" format

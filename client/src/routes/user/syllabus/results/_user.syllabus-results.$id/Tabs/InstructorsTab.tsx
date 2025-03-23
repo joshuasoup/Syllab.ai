@@ -3,7 +3,7 @@
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Briefcase, Mail } from "lucide-react";
-import { linkify, toTitleCase } from "@/components/syllabus/SubComponents";
+import { linkify, toTitleCase } from "@/components/features/syllabus/SubComponents";
 
 interface Instructor {
   name?: string;

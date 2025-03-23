@@ -7,7 +7,7 @@ import SignUp from "./routes/auth/sign-up";
 import SyllabusUpload from "./routes/user/syllabus/upload";
 import UserLayout, { loader as userLoader } from "./routes/_user";
 import AuthLayout from "./routes/_auth";
-import SyllabusResults from "./routes/user/syllabus/results";
+import SyllabusResults from "./routes/user/syllabus/results/_user.syllabus-results.$id";
 import GoogleAuthStart from "./routes/auth/google/start";
 
 
