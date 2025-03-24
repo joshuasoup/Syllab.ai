@@ -16,8 +16,10 @@ export interface Instructor {
 }
 
 export interface CourseInfo {
-  code?: string;
-  name?: string;
+  course_code?: string;
+  course_name?: string;
+  course_website?: string;
+  department?: string;
   term?: string;
   year?: string;
   credits?: string;

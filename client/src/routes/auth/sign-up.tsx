@@ -107,6 +107,14 @@ export default function() {
 
       // If we get here without an error being thrown, it's a success
       setSignupSuccess(true);
+      
+      // If the response indicates verification is required, redirect to verify-email page
+      if (response.requiresVerification) {
+        window.location.href = `/auth/verify-email?email=${encodeURIComponent(email)}`;
+        return;
+      }
+
+      // Otherwise, proceed with normal sign-in flow
       setVerifiedSuccess(true);
 
     } catch (error: unknown) {

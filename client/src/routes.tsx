@@ -4,6 +4,7 @@ import { ErrorBoundary } from "./root";
 import LandingPage from "./routes/_anon._index";
 import SignIn from "./routes/auth/sign-in";
 import SignUp from "./routes/auth/sign-up";
+import VerifyEmail from "./routes/auth/verify-email";
 import SyllabusUpload from "./routes/user/syllabus/upload";
 import UserLayout, { loader as userLoader } from "./routes/_user";
 import AuthLayout from "./routes/_auth";
@@ -34,6 +35,10 @@ export const router = createBrowserRouter([
           {
             path: "sign-up",
             element: <SignUp />,
+          },
+          {
+            path: "verify-email",
+            element: <VerifyEmail />,
           },
           {
             path: "sign-in",

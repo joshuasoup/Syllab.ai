@@ -24,6 +24,7 @@ export const signUp = async (req: Request, res: Response) => {
           first_name: firstName,
           last_name: lastName,
         },
+        emailRedirectTo: `${process.env.CLIENT_URL}/auth/verify-email`
       },
     });
 
@@ -32,19 +33,12 @@ export const signUp = async (req: Request, res: Response) => {
       return res.status(400).json({ message: signUpError.message });
     }
 
-    // Automatically sign in after successful registration
-    const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
+    console.log('Sign up successful:', { userId: signUpData.user?.id });
+    res.status(201).json({ 
+      user: signUpData.user,
+      message: 'Registration successful. Please check your email to verify your account.',
+      requiresVerification: true
     });
-
-    if (signInError) {
-      console.error('Auto sign in error:', signInError);
-      return res.status(500).json({ message: 'Registration successful but failed to sign in automatically' });
-    }
-
-    console.log('Sign up and auto sign in successful:', { userId: signInData.user?.id });
-    res.status(201).json({ user: signInData.user });
   } catch (error) {
     console.error('Sign up error:', error);
     res.status(500).json({ message: 'Error creating user' });
