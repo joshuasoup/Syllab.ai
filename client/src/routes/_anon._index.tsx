@@ -182,7 +182,7 @@ export default function() {
                 }}
                 onClick={handleActionClick}
               >
-                See It in Action :)
+                See It in Action
               </Button>
             </div>
           </div>

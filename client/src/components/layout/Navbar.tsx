@@ -98,7 +98,7 @@ export const Navbar = () => {
             className="w-14 h-14 p-0 flex items-center justify-center transition-all border border-transparent"
             asChild
           >
-            <Link to="auth/sign-in"><UserSilhouette className="text-black w-full h-full" /></Link>
+            <Link to="auth/sign-up"><UserSilhouette className="text-black w-full h-full" /></Link>
           </Button>
         )}
       </div>

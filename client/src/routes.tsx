@@ -8,7 +8,7 @@ import SyllabusUpload from "./routes/user/syllabus/upload";
 import UserLayout, { loader as userLoader } from "./routes/_user";
 import AuthLayout from "./routes/_auth";
 import SyllabusResults from "./routes/user/syllabus/results/_user.syllabus-results.$id";
-import GoogleAuthStart from "./routes/auth/google/start";
+import AuthCallback from "./routes/auth/callback";
 
 
 
@@ -32,16 +32,16 @@ export const router = createBrowserRouter([
         element: <AuthLayout />,
         children: [
           {
-            path: "sign-in",
-            element: <SignIn />,
-          },
-          {
             path: "sign-up",
             element: <SignUp />,
           },
           {
-            path: "google/start",
-            element: <GoogleAuthStart />,
+            path: "sign-in",
+            element: <SignIn />,
+          },
+          {
+            path: "callback",
+            element: <AuthCallback />,
           },
         ],
       },
