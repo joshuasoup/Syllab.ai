@@ -5,95 +5,43 @@ import { Navbar } from "@/components/layout/Navbar";
 import { LogoMarquee } from "@/components/features/LogoMarquee";
 import { getSession } from "@/lib/supabase";
 import { LoaderFunctionArgs } from "react-router-dom";
+import "../styles/landing-page.css";
 
-// Gradient style for SyllabAI text
-const syllabAIGradientStyle = {
-  background: "linear-gradient(to right, #2563eb, #9333ea)",
-  WebkitBackgroundClip: "text",
-  WebkitTextFillColor: "transparent",
-  backgroundClip: "text"
-};
-
-// Component for full page background
-const FullPageBackground = ({ children }: { children: React.ReactNode; }) => {
+// Component for full page background with proper TypeScript typing
+const FullPageBackground = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
-    // Apply styles to html and body elements
-    document.documentElement.style.height = "100%";
-    document.documentElement.style.margin = "0";
-    document.documentElement.style.padding = "0";
-    document.documentElement.style.overflow = "hidden";
+    document.documentElement.classList.add('landing-page');
+    document.body.classList.add('landing-page');
 
-    document.body.style.height = "100%";
-    document.body.style.margin = "0";
-    document.body.style.padding = "0";
-    document.body.style.overflow = "auto";
-    document.body.style.background = "#ffffff";
-    document.body.style.backgroundAttachment = "fixed";
-    document.body.style.backgroundSize = "cover";
-    document.body.style.backgroundPosition = "center";
-
-    // Cleanup function
     return () => {
-      document.documentElement.style.height = "";
-      document.documentElement.style.margin = "";
-      document.documentElement.style.padding = "";
-      document.documentElement.style.overflow = "";
-
-      document.body.style.height = "";
-      document.body.style.margin = "";
-      document.body.style.padding = "";
-      document.body.style.overflow = "";
-      document.body.style.background = "";
-      document.body.style.backgroundAttachment = "";
-      document.body.style.backgroundSize = "";
-      document.body.style.backgroundPosition = "";
+      document.documentElement.classList.remove('landing-page');
+      document.body.classList.remove('landing-page');
     };
   }, []);
 
   return (
-    <div
-      style={{
-        position: "absolute",
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        width: "100%",
-        background: "#ffffff",
-        backgroundAttachment: "fixed",
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-        display: "flex",
-        flexDirection: "column",
-        overflowX: "hidden",
-        overflowY: "auto",
-      }}
-    >
+    <div className="full-page-background">
       {children}
     </div>
   );
 };
 
-export const loader = async ({ request }: LoaderFunctionArgs) => {
+export const loader = async () => {
   try {
     const session = await getSession();
-    console.log('Landing page loader - Session check:', session?.user?.email);
     
     if (session?.user) {
-      console.log('User is authenticated, redirecting to syllabus upload');
       return redirect('/user/syllabus-upload');
     }
     
-    console.log('No active session found, showing landing page');
     return null;
   } catch (error) {
     console.error('Error checking session in landing page loader:', error);
-    // If there's an error getting the session, we'll just show the landing page
     return null;
   }
 };
 
-export default function() {
+export default function LandingPage() {
   const navigate = useNavigate();
 
   const handleActionClick = async () => {
@@ -114,54 +62,16 @@ export default function() {
     <FullPageBackground>
       <Navbar />
       <div className="w-full flex flex-col justify-start pt-32 px-4 sm:px-6 md:px-8 flex-grow">
-        <div className="w-full max-w-7xl mx-auto"
-          style={{
-            backgroundColor: "#f8f9fa",
-            backgroundImage: `
-          radial-gradient(circle at center, rgba(255,255,255,0) 0%, white 95%),
-          repeating-linear-gradient(0deg, rgba(0,0,0,0.05) 0, rgba(0,0,0,0.05) 1px, transparent 1px, transparent 25px),
-          repeating-linear-gradient(90deg, rgba(0,0,0,0.05) 0, rgba(0,0,0,0.05) 1px, transparent 1px, transparent 25px)
-        `,
-            backgroundSize: "cover, 25px 25px, 25px 25px",
-          }}>
+        {/* max-w-8xl and mx-auto are what add the padding*/}
+        <div className="w-full max-w-7xl mx-auto grid-background"> 
           <div className="text-center space-y-10 mb-20 mt-20">
-            <h1
-              className="text-6xl md:text-8xl font-bold text-slate-900"
-              style={{
-                fontWeight: 800,
-                letterSpacing: "0.02em",
-                lineHeight: 1.1,
-                fontFamily: "none",
-              }}
-            >
-              Never Open<br />A <span
-                className="inline-block"
-                style={syllabAIGradientStyle}
-              >Syllabus</span> Again.
+            <h1 className="text-6xl md:text-8xl font-bold text-slate-900" 
+                style={{ fontWeight: 800, letterSpacing: "0.02em", lineHeight: 1.1, fontFamily: "none" }}>
+              Never Open<br />A <span className="syllab-ai-gradient inline-block">Syllabus</span> Again.
             </h1>
-            <h2
-              className="font-bold mt-6"
-              style={{
-                letterSpacing: "0.02em",
-                marginTop: "10px",
-              }}
-            >
-              <span
-                style={{
-                  fontWeight: 500,
-                  opacity: 0.85
-                }}
-              >
-                Introducing{" "}
-              </span>
-              <span
-                style={{
-                  ...syllabAIGradientStyle,
-                  fontWeight: 700
-                }}
-              >
-                SyllabAI
-              </span>
+            <h2 className="font-bold mt-6" style={{ letterSpacing: "0.02em", marginTop: "10px" }}>
+              <span style={{ fontWeight: 500, opacity: 0.85 }}>Introducing{" "}</span>
+              <span className="syllab-ai-gradient" style={{ fontWeight: 700 }}>SyllabAI</span>
             </h2>
           </div>
 
@@ -176,10 +86,7 @@ export default function() {
             {/* Login Button */}
             <div className="flex justify-center mb-6 mt-20">
               <Button
-                className="w-52 h-14 rounded-xl text-white text-lg font-semibold transition-all hover:scale-105 hover:opacity-90 flex flex-row items-center justify-center"
-                style={{
-                  background: "linear-gradient(to right, #2563eb, #9333ea)",
-                }}
+                className="w-52 h-14 rounded-xl text-white text-lg font-semibold transition-all hover:scale-105 hover:opacity-90 flex flex-row items-center justify-center gradient-button"
                 onClick={handleActionClick}
               >
                 See It in Action
@@ -190,11 +97,8 @@ export default function() {
           {/* Demo Section */}
           <div id="demo" className="w-full py-20 mt-20 bg-slate-50 rounded-3xl shadow-inner relative overflow-hidden">
             <h2 className="text-3xl md:text-4xl font-bold text-center mb-12"
-              style={{
-                fontWeight: 700,
-                letterSpacing: "0.03em"
-              }}>
-              <span style={syllabAIGradientStyle}>SyllabAI</span> Login to Experience SyllabAI
+                style={{ fontWeight: 700, letterSpacing: "0.03em" }}>
+              <span className="syllab-ai-gradient">SyllabAI</span> Login to Experience SyllabAI
             </h2>
 
             <div className="max-w-6xl mx-auto px-4">
@@ -208,9 +112,7 @@ export default function() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
                     <p className="text-slate-600 text-center mb-4">Drag & drop your syllabus PDF here</p>
-                    <Button className="text-white" style={{
-                      background: "linear-gradient(to right, #2563eb, #9333ea)"
-                    }}>
+                    <Button className="text-white gradient-button">
                       Browse Files
                     </Button>
                   </div>
@@ -291,10 +193,7 @@ export default function() {
               {/* CTA */}
               <div className="mt-12 text-center">
                 <Button
-                  className="px-8 py-6 rounded-xl text-white text-lg font-semibold transition-all hover:scale-105 hover:opacity-90"
-                  style={{
-                    background: "linear-gradient(to right, #2563eb, #9333ea)",
-                  }}
+                  className="px-8 py-6 rounded-xl text-white text-lg font-semibold transition-all hover:scale-105 hover:opacity-90 gradient-button"
                   asChild
                 >
                   <Link to="auth/sign-up">Try SyllabAI Free</Link>

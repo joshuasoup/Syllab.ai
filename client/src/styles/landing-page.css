@@ -1,0 +1,55 @@
+/* landing-page.css */
+html.landing-page {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+body.landing-page {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: auto;
+  background: #ffffff;
+  background-attachment: fixed;
+  background-size: cover;
+  background-position: center;
+}
+
+.full-page-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  background: #ffffff;
+  background-attachment: fixed;
+  background-size: cover;
+  background-position: center;
+  display: flex;
+  flex-direction: column;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.syllab-ai-gradient {
+  background: linear-gradient(to right, #2563eb, #9333ea);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.grid-background {
+  background-color: #f8f9fa;
+  background-image: 
+    radial-gradient(circle at center, rgba(255,255,255,0) 0%, white 95%),
+    repeating-linear-gradient(0deg, rgba(0,0,0,0.05) 0, rgba(0,0,0,0.05) 1px, transparent 1px, transparent 25px),
+    repeating-linear-gradient(90deg, rgba(0,0,0,0.05) 0, rgba(0,0,0,0.05) 1px, transparent 1px, transparent 25px);
+  background-size: cover, 25px 25px, 25px 25px;
+}
+
+.gradient-button {
+  background: linear-gradient(to right, #2563eb, #9333ea);
+}

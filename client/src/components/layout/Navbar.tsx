@@ -78,7 +78,8 @@ export const Navbar = () => {
   const { user } = useAuth();
   
   return (
-    <div className="fixed top-0 left-0 w-full bg-white z-50 py-4 px-6">
+    <div className="fixed top-0 left-0 w-full bg-white z-50 py-4 px-0">
+      {/* max-w-7xl is what gets the padding */}
       <div className="max-w-7xl mx-auto flex justify-between items-center">
         <Link
           to="/"
