@@ -1,45 +1,43 @@
 // web/routes/_user.syllabus-result.$id/index.tsx
 
 import React, { useState } from "react";
-import { useParams, Link, useNavigate } from "react-router-dom";
+import { useParams, Link, useNavigate, useOutletContext } from "react-router-dom";
 import { api } from "@/services/api";
 import { useFindOne } from "@/hooks/useFindOne";
-import type { Syllabus } from "@/types/syllabus";
-
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import DeleteSyllabusButton from "@/components/features/syllabus/DeleteSyllabusButton";
+import type { Syllabus, ICSEvent } from "@/types/syllabus";
 import { toast } from "sonner";
-import ChatbotDialog from "@/components/features/chat/ChatbotDialog";
-
-// 1. Import helpers and types
+import { filterEmptyEntries, isEmpty } from "./SyllabusHelpers";
+import { toTitleCase, linkify, TimelineItem, extractDateFromText } from "@/components/features/syllabus/SubComponents";
+import { Calendar } from "@/components/features/syllabus/Calendar";
+import { CourseInfo } from "@/components/features/syllabus/CourseInfo";
+import { GradeBreakdown } from "@/components/features/syllabus/GradeBreakdown";
+import { 
+  Calendar as CalendarIcon, 
+  Trash2, 
+  MessageCircle, 
+  ClipboardList, 
+  Star, 
+  Clock,
+  ChevronRight
+} from "lucide-react";
+import type { AuthOutletContext } from "@/routes/_user";
+import { useAction } from "@/hooks/useAction";
 import {
-  formatDate,
-  isEmpty,
-  filterEmptyEntries,
-} from "./SyllabusHelpers";
-
-// 2. Import your parted-out sub-components
-import SyllabusHeader from "./SyllabusHeader";
-import CourseInfoTab from "./Tabs/CourseInfoTab";
-import InstructorsTab from "./Tabs/InstructorsTab";
-import ScheduleTab from "./Tabs/ScheduleTab";
-import AssessmentsTab from "./Tabs/AssessmentsTab";
-import PoliciesTab from "./Tabs/PoliciesTab";
-import ResourcesTab from "./Tabs/ResourcesTab";
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 
 export default function SyllabusResults() {
   const { id } = useParams();
   const navigate = useNavigate();
-
-  // Local state
-  const [activeTab, setActiveTab] = useState<string>("course-info");
+  const { user } = useOutletContext<AuthOutletContext>();
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [{ fetching: isDeleting }, deleteSyllabus] = useAction((id: string) => api.syllabus.delete(id));
 
   // Validate ID
   const isValidId = id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
@@ -58,23 +56,14 @@ export default function SyllabusResults() {
   if (!id || !isValidId) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-4">
-        <Card className="max-w-4xl bg-destructive/10 w-full">
-          <CardHeader>
-            <CardTitle className="text-destructive">Invalid Syllabus ID</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p>
-              {!id
-                ? "No syllabus ID was provided in the URL."
-                : "The provided syllabus ID is invalid."}
-            </p>
-          </CardContent>
-          <div className="p-4">
-            <Button asChild variant="outline">
-              <Link to="/syllabus-upload">Back to Dashboard</Link>
-            </Button>
-          </div>
-        </Card>
+        <div className="text-center">
+          <p className="text-red-600 mb-4">
+            {!id ? "No syllabus ID was provided." : "Invalid syllabus ID."}
+          </p>
+          <Link to="/syllabus-upload" className="text-blue-600 hover:text-blue-800">
+            Back to Dashboard
+          </Link>
+        </div>
       </div>
     );
   }
@@ -82,15 +71,7 @@ export default function SyllabusResults() {
   if (fetching) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-4">
-        <Card className="max-w-4xl w-full">
-          <CardHeader>
-            <CardTitle>Loading Syllabus</CardTitle>
-            <p>Retrieving your syllabus information...</p>
-          </CardHeader>
-          <CardContent className="flex flex-col items-center justify-center p-6">
-            <div className="animate-pulse text-primary">Loading...</div>
-          </CardContent>
-        </Card>
+        <div className="animate-pulse text-primary">Loading...</div>
       </div>
     );
   }
@@ -105,19 +86,12 @@ export default function SyllabusResults() {
 
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-4">
-        <Card className="max-w-4xl bg-destructive/10 w-full">
-          <CardHeader>
-            <CardTitle className="text-destructive">Error Loading Syllabus</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p>There was an error: {error.message}</p>
-          </CardContent>
-          <div className="p-4">
-            <Button asChild variant="outline">
-              <Link to="/syllabus-upload">Back to Dashboard</Link>
-            </Button>
-          </div>
-        </Card>
+        <div className="text-center">
+          <p className="text-red-600 mb-4">Error: {error.message}</p>
+          <Link to="/syllabus-upload" className="text-blue-600 hover:text-blue-800">
+            Back to Dashboard
+          </Link>
+        </div>
       </div>
     );
   }
@@ -125,134 +99,270 @@ export default function SyllabusResults() {
   if (!syllabus) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-4">
-        <Card className="max-w-4xl w-full">
-          <CardHeader>
-            <CardTitle>Syllabus Not Found</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p>The syllabus you're looking for could not be found.</p>
-          </CardContent>
-          <div className="p-4">
-            <Button asChild variant="outline">
-              <Link to="/syllabus-upload">Back to Dashboard</Link>
-            </Button>
-          </div>
-        </Card>
+        <div className="text-center">
+          <p className="text-gray-600 mb-4">Syllabus not found</p>
+          <Link to="/syllabus-upload" className="text-blue-600 hover:text-blue-800">
+            Back to Dashboard
+          </Link>
+        </div>
       </div>
     );
   }
 
-  // Deconstruct
-  const { title, file, createdAt, updatedAt, highlights, processed, icsContent } = syllabus;
-  const fileUrl = file?.url;
+  const { highlights } = syllabus;
   const data = highlights || {};
 
-  // Handler for ICS download
-  const handleICSDownload = () => {
-    if (!icsContent) return;
-    const blob = new Blob([icsContent], { type: "text/calendar;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.setAttribute("download", `${title || "course"}_calendar.ics`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+  // Debug logging
+  console.log('Course Info:', data.course_info);
+  console.log('Full Data:', data);
+  console.log('Assessments:', data.assessments);
+
+  // Combine all dates for the calendar
+  const allDates = [
+    // Assessment dates
+    ...(data.assessments || [])
+      .filter(assessment => assessment.due_date && assessment.due_date.length > 0)
+      .flatMap(assessment => 
+        assessment.due_date.map(date => ({
+          date,
+          title: assessment.name,
+          type: 'assessment'
+        }))
+      ),
+    // Important deadlines
+    ...(data.important_deadlines || [])
+      .filter(deadline => {
+        const date = deadline.date || (deadline.description ? extractDateFromText(deadline.description)?.date : null);
+        return date && typeof date === 'string';
+      })
+      .map(deadline => {
+        const date = deadline.date || (deadline.description ? extractDateFromText(deadline.description)?.date : null);
+        return {
+          date: date as string,
+          title: deadline.description || 'Unnamed Deadline',
+          type: 'deadline'
+        };
+      }),
+    // Class schedule from ics_events
+    ...(data.ics_events || [])
+      .filter((event: ICSEvent) => event.recurrence && event.recurrence.includes('Every'))
+      .flatMap((event: ICSEvent) => {
+        // Parse the recurrence string to get days and times
+        const recurrencePattern = event.recurrence.replace('Every ', '');
+        const schedules = recurrencePattern.split(', ').map((schedule: string) => {
+          const [day, time] = schedule.split(' ');
+          const [startTime, endTime] = time.split('-');
+          return { day, startTime, endTime };
+        });
+
+        // Get the current month's dates for these days
+        const currentDate = new Date();
+        const firstDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+        const lastDay = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
+        
+        const classEvents = [];
+        for (let date = new Date(firstDay); date <= lastDay; date.setDate(date.getDate() + 1)) {
+          const daySchedule = schedules.find((s: { day: string }) => 
+            s.day.toLowerCase() === date.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase()
+          );
+          
+          if (daySchedule) {
+            const dateStr = date.toISOString().split('T')[0];
+            classEvents.push({
+              date: dateStr,
+              title: event.event_title || 'Class',
+              type: 'class',
+              location: event.location
+            });
+          }
+        }
+        
+        return classEvents;
+      })
+  ];
+
+  // Sort dates chronologically
+  allDates.sort((a, b) => {
+    if (!a.date || !b.date) return 0;
+    return new Date(a.date).getTime() - new Date(b.date).getTime();
+  });
+
+  const handleDownloadCalendar = () => {
+    if (!syllabus?.icsContent) {
+      toast.error("No calendar data available");
+      return;
+    }
+
+    const blob = new Blob([syllabus.icsContent], { type: 'text/calendar' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${syllabus.title || 'syllabus'}_calendar.ics`;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+    toast.success("Calendar downloaded successfully");
+  };
+
+  const handleDelete = async () => {
+    try {
+      await deleteSyllabus(id!);
+      toast.success("Syllabus deleted successfully");
+      navigate("/user/syllabus-upload");
+    } catch (error) {
+      toast.error("Failed to delete syllabus");
+      console.error("Delete syllabus error:", error);
+    } finally {
+      setIsDeleteDialogOpen(false);
+    }
   };
 
   return (
-    <div className="min-h-screen">
-      {/* Header */}
-      <div className="mb-3">
-        <SyllabusHeader
-          title={title}
-          fileUrl={fileUrl}
-          updatedAt={updatedAt}
-          icsContent={icsContent || undefined}
-          onDownloadCalendar={handleICSDownload}
-        />
-      </div>
+    <div className="container mx-auto p-8 mt-10">
+      {/* Top Section */}
+      <div className="rounded-xl p-8 pb-0">
+        {/* Greeting Section */}
+        <div className="mb-8">
+          <div className="flex flex-col">
+            <div className="flex items-center justify-between">
+              <h1 className="text-4xl font-bold">
+                Hi, {user?.firstName 
+                  ? `${user.firstName}${user.lastName ? ` ${user.lastName}` : ''}` 
+                  : 'there'}!
+              </h1>
+              <div className="flex items-center gap-3">
+                <div 
+                  className="flex items-center gap-2 bg-blue-50 px-4 py-2 rounded-full cursor-pointer hover:bg-blue-100 transition-colors"
+                  onClick={handleDownloadCalendar}
+                >
+                  <CalendarIcon className="w-4 h-4 text-blue-600" />
+                  <span className="text-blue-600 font-medium">Add to Calendar</span>
+                </div>
+                <div 
+                  className="flex items-center gap-2 bg-red-50 px-4 py-2 rounded-full cursor-pointer hover:bg-red-100 transition-colors"
+                  onClick={() => setIsDeleteDialogOpen(true)}
+                >
+                  <Trash2 className="w-4 h-4 text-red-600" />
+                  <span className="text-red-600 font-medium">Delete</span>
+                </div>
+                <div className="flex items-center gap-2 bg-gray-50 px-4 py-2 rounded-full cursor-pointer hover:bg-gray-100 transition-colors">
+                  <MessageCircle className="w-4 h-4 text-gray-600" />
+                  <span className="text-gray-600 font-medium">Chat</span>
+                </div>
+              </div>
+            </div>
+            <p className="text-gray-500 mt-2">
+              Welcome to {data.course_info?.name || 'your course'}! You are {data.assessments?.length || 0} assessments away from completing the course.
+            </p>
+          </div>
+        </div>
 
-      {/* Main Tabs */}
-      <div className="container mx-auto pb-12">
-        <Tabs
-          defaultValue="course-info"
-          onValueChange={(value) => setActiveTab(value)}
-          className="w-full mb-12"
-        >
-          <div className="relative">
-            <TabsList className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 mb-6">
-              {data.course_info && (
-                <TabsTrigger value="course-info">📚 Course Info</TabsTrigger>
-              )}
-              {data.instructors && Array.isArray(data.instructors) && data.instructors.length > 0 && (
-                <TabsTrigger value="instructors">👨‍🏫 Instructors</TabsTrigger>
-              )}
-              {data.class_schedule && (
-                <TabsTrigger value="schedule">📆 Schedule</TabsTrigger>
-              )}
-              {data.assessments && Array.isArray(data.assessments) && data.assessments.length > 0 && (
-                <TabsTrigger value="assessments">📝 Assessments</TabsTrigger>
-              )}
-              {(data.policies || (data.important_deadlines && data.important_deadlines.length > 0)) && (
-                <TabsTrigger value="policies">⚠️ Policies</TabsTrigger>
-              )}
-              {(data.textbooks || data.other_details) && (
-                <TabsTrigger value="resources">📋 Resources</TabsTrigger>
-              )}
-            </TabsList>
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {/* Completed Tasks */}
+          <div className="bg-gray-100 rounded-lg p-4 flex items-center justify-between">
+            <div>
+              <div className="text-sm text-gray-600">Completed tasks</div>
+              <div className="text-2xl font-bold">85%</div>
+            </div>
+            <ClipboardList className="w-6 h-6 text-gray-400" />
           </div>
 
-          {data.course_info && (
-            <TabsContent value="course-info" className="space-y-8 mt-2">
-              <CourseInfoTab courseInfo={data.course_info} />
-            </TabsContent>
-          )}
+          {/* Customer Rating */}
+          <div className="bg-[#DFFB92] rounded-lg p-4 flex items-center justify-between">
+            <div>
+              <div className="text-sm text-gray-600">Customer rating</div>
+              <div className="text-2xl font-bold">4.8</div>
+            </div>
+            <Star className="w-6 h-6 text-yellow-400" />
+          </div>
 
-          {data.instructors && Array.isArray(data.instructors) && data.instructors.length > 0 && (
-            <TabsContent value="instructors" className="mt-2">
-              <InstructorsTab instructors={data.instructors} />
-            </TabsContent>
-          )}
-
-          {data.class_schedule && (
-            <TabsContent value="schedule" className="mt-2">
-              <ScheduleTab classSchedule={data.class_schedule} />
-            </TabsContent>
-          )}
-
-          {data.assessments && Array.isArray(data.assessments) && data.assessments.length > 0 && (
-            <TabsContent value="assessments" className="mt-2">
-              <AssessmentsTab assessments={data.assessments} />
-            </TabsContent>
-          )}
-
-          {(data.policies || data.important_deadlines) && (
-            <TabsContent value="policies" className="mt-2">
-              <PoliciesTab
-                policies={data.policies}
-                importantDeadlines={data.important_deadlines}
-              />
-            </TabsContent>
-          )}
-
-          {(data.textbooks || data.other_details) && (
-            <TabsContent value="resources" className="mt-2">
-              <ResourcesTab
-                textbooks={data.textbooks}
-                otherDetails={data.other_details}
-              />
-            </TabsContent>
-          )}
-        </Tabs>
+          {/* Average Time */}
+          <div className="bg-[#E9DBFB] rounded-lg p-4 flex items-center justify-between">
+            <div>
+              <div className="text-sm text-gray-600">Avg. time</div>
+              <div className="text-2xl font-bold">3.5h</div>
+            </div>
+            <Clock className="w-6 h-6 text-purple-400" />
+          </div>
+        </div>
       </div>
 
-      {/* Chatbot and DeleteButton */}
-      <div className="container mx-auto px-4 pb-8 flex justify-center gap-4">
-        <ChatbotDialog />
-        <DeleteSyllabusButton syllabusId={id} />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-8">
+        {/* Course Info Column */}
+        <div className="space-y-8">
+          {/* Course Info Section */}
+          <div className="rounded-xl p-8">
+            <h2 className="text-3xl font-bold mb-6 border-b-2 border-gray-200 pb-4">
+              <Link 
+                to={`/user/syllabus/${id}/course-info`} 
+                className="flex items-center gap-2 hover:text-blue-600 transition-colors group"
+              >
+                <div className="flex items-center gap-2">
+                  <span className="truncate" title={data.course_info?.name}>
+                    {data.course_info?.name || "Course Info"}
+                  </span>
+                  {data.course_info?.code && (
+                    <>
+                      <span className="text-gray-400">-</span>
+                      <span className="truncate" title={data.course_info.code}>
+                        {data.course_info.code}
+                      </span>
+                    </>
+                  )}
+                </div>
+                <ChevronRight className="w-5 h-5 opacity-0 group-hover:opacity-100 transition-opacity" />
+              </Link>
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <CourseInfo 
+                instructors={data.instructors || []} 
+                classSchedule={data.class_schedule}
+              />
+              <GradeBreakdown assessments={data.assessments || []} />
+            </div>
+          </div>
+        </div>
+
+        {/* Calendar Section */}
+        <div className="rounded-xl p-8">
+          <h2 className="text-3xl font-bold mb-8 border-b-2 border-gray-200 pb-4">
+            <Link 
+              to={`/user/syllabus/${id}/calendar`}
+              className="flex items-center gap-2 hover:text-blue-600 transition-colors group"
+            >
+              <span>Calendar</span>
+              <ChevronRight className="w-5 h-5 opacity-0 group-hover:opacity-100 transition-opacity" />
+            </Link>
+          </h2>
+          <Calendar dates={allDates} />
+        </div>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Submission</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this syllabus? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={handleDelete} 
+              disabled={isDeleting}
+            >
+              {isDeleting ? "Deleting..." : "Delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

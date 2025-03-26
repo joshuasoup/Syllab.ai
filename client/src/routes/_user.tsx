@@ -6,7 +6,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Toaster } from "@/components/ui/sonner";
-import { ChevronDown, ChevronRight, FileText, LogOut, Menu, User as UserIcon, Folder } from "lucide-react";
+import { ChevronDown, ChevronRight, FileText, LogOut, Menu, User as UserIcon, Folder, ChevronLeft } from "lucide-react";
 import CommandKBadge from "@/components/shared/CommandKBadge";
 import { useState } from "react";
 import { api } from "@/services/api";
@@ -122,7 +122,7 @@ const UserMenu = ({ user }: { user: User }) => {
   );
 };
 
-const SideBar = ({ user }: { user: User }) => {
+const SideBar = ({ user, isCollapsed }: { user: User, isCollapsed: boolean }) => {
   const location = useLocation();
   const [syllabusesOpen, setSyllabusesOpen] = useState(true);
 
@@ -134,13 +134,16 @@ const SideBar = ({ user }: { user: User }) => {
   return (
     <div className="flex flex-col flex-grow bg-background border-r h-full text-sm">
       <div className="px-3 py-4 border-b">
-        <Link to="/" className="flex items-center gap-2">
+        <Link 
+          to="/" 
+          className={`flex items-center gap-2 ${isCollapsed ? 'pointer-events-none' : ''}`}
+        >
           <img 
             src={logoUrl} 
             alt="SyllabAI Logo" 
-            className="w-10 h-10 object-contain"
+            className={`object-contain transition-all duration-300 ${isCollapsed ? 'w-8 h-8' : 'w-10 h-10'}`}
           />
-          <span className="text-2xl font-bold">
+          <span className={`text-2xl font-bold whitespace-nowrap transition-all duration-300 ${isCollapsed ? 'w-0 opacity-0' : 'w-auto opacity-100'}`}>
             <span className="text-black">SyllabAI</span>
           </span>
         </Link>
@@ -152,64 +155,73 @@ const SideBar = ({ user }: { user: User }) => {
             className="flex items-center justify-between w-full px-3 py-1.5 text-sm font-medium text-left rounded-sm transition-colors hover:bg-accent hover:text-accent-foreground"
           >
             <div className="flex items-center">
-              <Folder className="mr-2 h-4 w-4" />
-              My Syllabuses
+              <Folder className={`${isCollapsed ? 'w-4 h-4' : 'w-4 h-4 mr-2'}`} />
+              <span className={`whitespace-nowrap transition-all duration-300 ${isCollapsed ? 'w-0 opacity-0' : 'w-auto opacity-100'}`}>
+                My Syllabuses
+              </span>
             </div>
-            {syllabusesOpen ? (
-              <ChevronDown className="h-3 w-3" />
-            ) : (
-              <ChevronRight className="h-3 w-3" />
-            )}
+            <span className={`transition-all duration-300 ${isCollapsed ? 'w-0 opacity-0' : 'w-auto opacity-100'}`}>
+              {syllabusesOpen ? (
+                <ChevronDown className="h-3 w-3" />
+              ) : (
+                <ChevronRight className="h-3 w-3" />
+              )}
+            </span>
           </button>
           
-          {syllabusesOpen && (
-            <div className="ml-4 space-y-0.5 mt-0.5">
-              {fetching && (
-                <div className="text-xs text-muted-foreground px-2 py-0.5">
-                  Loading...
-                </div>
-              )}
-              
-              {error && (
-                <div className="text-xs text-red-500 px-2 py-0.5">
-                  Error loading syllabuses
-                </div>
-              )}
-              
-              {syllabuses && syllabuses.length === 0 && !fetching && (
-                <div className="text-xs text-muted-foreground px-2 py-0.5">
-                  No syllabuses uploaded yet
-                </div>
-              )}
-              
-              {syllabuses && syllabuses.map((syllabus: Syllabus) => (
-                <Link
-                  key={syllabus.id}
-                  to={`/user/syllabus-results/${syllabus.id}`}
-                  className={`flex items-center px-3 py-1.5 text-xs font-normal rounded-sm transition-colors text-muted-foreground
-                    ${
-                      location.pathname === `/user/syllabus-results/${syllabus.id}`
-                        ? "bg-accent/50 text-accent-foreground"
-                        : "hover:bg-accent/50 hover:text-accent-foreground"
-                    }`}
-                >
-                  <FileText className="mr-1.5 h-4 w-4 text-gray-500" />
-                  <span className="truncate">{syllabus.title}</span>
-                </Link>
-              ))}
-              
-            </div>
-          )}
+          <div className={`transition-all duration-300 ${isCollapsed ? 'h-0 opacity-0' : 'h-auto opacity-100'}`}>
+            {syllabusesOpen && !isCollapsed && (
+              <div className="ml-4 space-y-0.5 mt-0.5">
+                {fetching && (
+                  <div className="text-xs text-muted-foreground px-2 py-0.5">
+                    Loading...
+                  </div>
+                )}
+                
+                {error && (
+                  <div className="text-xs text-red-500 px-2 py-0.5">
+                    Error loading syllabuses
+                  </div>
+                )}
+                
+                {syllabuses && syllabuses.length === 0 && !fetching && (
+                  <div className="text-xs text-muted-foreground px-2 py-0.5">
+                    No syllabuses uploaded yet
+                  </div>
+                )}
+                
+                {syllabuses && syllabuses.map((syllabus: Syllabus) => (
+                  <Link
+                    key={syllabus.id}
+                    to={`/user/syllabus-results/${syllabus.id}`}
+                    className={`flex items-center px-3 py-1.5 text-xs font-normal rounded-sm transition-colors text-muted-foreground
+                      ${
+                        location.pathname === `/user/syllabus-results/${syllabus.id}`
+                          ? "bg-accent/50 text-accent-foreground"
+                          : "hover:bg-accent/50 hover:text-accent-foreground"
+                      }`}
+                  >
+                    <FileText className="mr-1.5 h-4 w-4 text-gray-500 flex-shrink-0" />
+                    <span className="truncate whitespace-nowrap">{syllabus.title}</span>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </nav>
-      <div className="mt-auto px-3 py-3 ">
-        <UserMenu user={user} />
+      <div className="mt-auto px-3 py-3">
+        <div className={`transition-all duration-300 ${isCollapsed ? 'h-0 opacity-0' : 'h-auto opacity-100'}`}>
+          <UserMenu user={user} />
+        </div>
         <Link
           to="/user/syllabus-upload"
-          className="flex items-center w-full px-3 py-2 mb-3 mt-4 text-sm font-medium rounded-sm bg-blue-600 hover:bg-blue-700 text-white transition-colors"
+          className={`flex items-center w-full px-3 py-2 mb-3 mt-4 text-sm font-medium rounded-sm bg-blue-600 hover:bg-blue-700 text-white transition-colors ${isCollapsed ? 'justify-center' : ''}`}
         >
-          <FileText className="mr-2 h-3 w-3" />
-          Upload New Syllabus
+          <FileText className={`${isCollapsed ? 'w-4 h-4' : 'w-3 h-3 mr-2 flex-shrink-0'}`} />
+          <span className={`whitespace-nowrap transition-all duration-300 ${isCollapsed ? 'w-0 opacity-0' : 'w-auto opacity-100'}`}>
+            Upload New Syllabus
+          </span>
         </Link>
       </div>
     </div>
@@ -231,7 +243,7 @@ const SideBarMenuButtonDrawer = ({ user }: { user: User }) => {
         className={`fixed inset-y-0 left-0 w-64 transform transition-transform duration-200 ease-in-out ${
           isOpen ? "translate-x-0" : "-translate-x-full"
         } bg-background shadow-lg z-20`}>
-        <SideBar user={user} />
+        <SideBar user={user} isCollapsed={false} />
       </div>
 
       {isOpen && (
@@ -247,6 +259,7 @@ const SideBarMenuButtonDrawer = ({ user }: { user: User }) => {
 export default function () {
   const data = useLoaderData() as { user: User };
   const rootOutletContext = useOutletContext<RootOutletContext>();
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   if (!data.user) {
     return null;
@@ -256,10 +269,26 @@ export default function () {
     <div className="min-h-screen flex flex-col">
       <div className="flex flex-1">
         <SideBarMenuButtonDrawer user={data.user} />
-        <div className="hidden md:flex w-56 flex-col fixed inset-y-0">
-          <SideBar user={data.user} />
+        <div className={`hidden md:flex flex-col fixed inset-y-0 transition-all duration-300 ${isSidebarCollapsed ? 'w-16' : 'w-56'}`}>
+          <div className="relative h-full">
+            <SideBar user={data.user} isCollapsed={isSidebarCollapsed} />
+            <button
+              onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+              className={`absolute bg-white rounded-full p-1.5 shadow-md hover:bg-gray-50 transition-colors border ${
+                isSidebarCollapsed 
+                  ? '-right-3 top-4' 
+                  : '-right-3 top-4'
+              }`}
+            >
+              {isSidebarCollapsed ? (
+                <ChevronRight className="h-4 w-4" />
+              ) : (
+                <ChevronLeft className="h-4 w-4" />
+              )}
+            </button>
+          </div>
         </div>
-        <div className="flex-1 md:ml-56">
+        <div className={`flex-1 transition-all duration-300 ${isSidebarCollapsed ? 'md:ml-16' : 'md:ml-56'}`}>
           <Outlet context={{ ...rootOutletContext, user: data.user }} />
         </div>
       </div>

@@ -14,7 +14,11 @@ You are a helpful assistant that extracts **structured data** from a university 
 When given the raw text of the syllabus, identify and extract the following:
 1. Course Info (course_name, course_code, department, course website from the school)
 2. Instructors/TA(s) (name, email, office_hours, office_location)
-3. Class Schedule (meeting_days_times, location)
+3. Class Schedule (meeting_days_times, location) - For location, please provide:
+   - Building name and room number
+   - If available, include the full address or campus location
+   - If multiple locations are used, list all of them
+   - If the class is online, specify the platform (e.g., "Zoom", "Teams")
 4. Tutorial/Lab Info (times, locations, TAs)
 5. Assessments (name, weight, due_date) – Note: If an assessment has multiple due dates (e.g., recurring submissions or tutorial attendances on different days), do not create multiple assessment objects. Instead, include all dates in a single assessment object as an array in the due_date field. Also if there's other information that should be noted such as having multiple options to have different weightings on the projects, then clearly state it within the weights array. 
 6. Important Deadlines
@@ -85,7 +89,8 @@ description: Additional details or context about the event.
       {
         "name": "",
         "weight": [],
-        "due_date": []  
+        "due_date": [],
+        "num_submissions": []
       }
     ],
     "important_deadlines": [],

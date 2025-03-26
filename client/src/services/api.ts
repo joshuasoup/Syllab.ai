@@ -96,7 +96,7 @@ export const api = {
         body: JSON.stringify({ email, password }),
       }),
     signUp: (email: string, password: string, firstName?: string, lastName?: string) =>
-      fetchApi<{ user: User }>('/auth/sign-up', {
+      fetchApi<{ user: User; requiresVerification?: boolean }>('/auth/sign-up', {
         method: 'POST',
         body: JSON.stringify({ email, password, firstName, lastName }),
       }),
