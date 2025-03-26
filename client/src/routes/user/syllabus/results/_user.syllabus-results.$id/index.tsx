@@ -1,112 +1,43 @@
 // web/routes/_user.syllabus-result.$id/index.tsx
 
 import React, { useState } from "react";
-import { useParams, Link, useNavigate } from "react-router-dom";
+import { useParams, Link, useNavigate, useOutletContext } from "react-router-dom";
 import { api } from "@/services/api";
 import { useFindOne } from "@/hooks/useFindOne";
-import type { Syllabus } from "@/types/syllabus";
+import type { Syllabus, ICSEvent } from "@/types/syllabus";
 import { toast } from "sonner";
 import { filterEmptyEntries, isEmpty } from "./SyllabusHelpers";
 import { toTitleCase, linkify, TimelineItem, extractDateFromText } from "@/components/features/syllabus/SubComponents";
-import { ChevronLeft, ChevronRight } from "lucide-react";
-
-function Calendar({ dates }: { dates: Array<{ date: string; title: string; type: string }> }) {
-  const [currentDate, setCurrentDate] = useState(new Date());
-
-  // Calendar navigation
-  const prevMonth = () => {
-    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1));
-  };
-
-  const nextMonth = () => {
-    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1));
-  };
-
-  // Get calendar data
-  const daysInMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate();
-  const firstDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1).getDay();
-  
-  // Create calendar grid
-  const days = [];
-  const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-  const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-
-  // Get events for current month
-  const eventsThisMonth = dates.filter(date => {
-    const eventDate = new Date(date.date);
-    return eventDate.getMonth() === currentDate.getMonth() && 
-           eventDate.getFullYear() === currentDate.getFullYear();
-  });
-
-  // Create calendar grid
-  for (let i = 0; i < firstDayOfMonth; i++) {
-    days.push(null);
-  }
-  for (let day = 1; day <= daysInMonth; day++) {
-    days.push(day);
-  }
-
-  return (
-    <div className="w-full">
-      {/* Calendar Header */}
-      <div className="flex items-center justify-between mb-4">
-        <button onClick={prevMonth} className="p-2 hover:bg-gray-200 rounded-full">
-          <ChevronLeft className="w-5 h-5" />
-        </button>
-        <h3 className="text-lg font-semibold">
-          {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
-        </h3>
-        <button onClick={nextMonth} className="p-2 hover:bg-gray-200 rounded-full">
-          <ChevronRight className="w-5 h-5" />
-        </button>
-      </div>
-
-      {/* Calendar Grid */}
-      <div className="grid grid-cols-7 gap-1">
-        {/* Day names */}
-        {dayNames.map(day => (
-          <div key={day} className="text-center text-sm font-medium p-2">
-            {day}
-          </div>
-        ))}
-        
-        {/* Calendar days */}
-        {days.map((day, index) => {
-          const dateStr = day ? new Date(currentDate.getFullYear(), currentDate.getMonth(), day).toISOString().split('T')[0] : '';
-          const events = eventsThisMonth.filter(event => event.date.startsWith(dateStr));
-          
-          return (
-            <div 
-              key={index} 
-              className={`min-h-[80px] p-1 border border-gray-200 ${
-                day ? 'bg-white' : 'bg-gray-50'
-              }`}
-            >
-              {day && (
-                <>
-                  <div className="text-sm p-1">{day}</div>
-                  {events.map((event, eventIndex) => (
-                    <div 
-                      key={eventIndex}
-                      className="text-xs p-1 mb-1 bg-blue-100 rounded truncate"
-                      title={event.title}
-                    >
-                      {event.title}
-                    </div>
-                  ))}
-                </>
-              )}
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
+import { Calendar } from "@/components/features/syllabus/Calendar";
+import { CourseInfo } from "@/components/features/syllabus/CourseInfo";
+import { GradeBreakdown } from "@/components/features/syllabus/GradeBreakdown";
+import { 
+  Calendar as CalendarIcon, 
+  Trash2, 
+  MessageCircle, 
+  ClipboardList, 
+  Star, 
+  Clock,
+  ChevronRight
+} from "lucide-react";
+import type { AuthOutletContext } from "@/routes/_user";
+import { useAction } from "@/hooks/useAction";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 
 export default function SyllabusResults() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user } = useOutletContext<AuthOutletContext>();
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [{ fetching: isDeleting }, deleteSyllabus] = useAction((id: string) => api.syllabus.delete(id));
 
   // Validate ID
   const isValidId = id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
@@ -184,28 +115,69 @@ export default function SyllabusResults() {
   // Debug logging
   console.log('Course Info:', data.course_info);
   console.log('Full Data:', data);
+  console.log('Assessments:', data.assessments);
 
   // Combine all dates for the calendar
   const allDates = [
+    // Assessment dates
     ...(data.assessments || [])
-      .filter(assessment => assessment.date && typeof assessment.date === 'string')
-      .map(assessment => ({
-        date: assessment.date,
-        title: assessment.title,
-        type: 'assessment'
-      })),
+      .filter(assessment => assessment.due_date && assessment.due_date.length > 0)
+      .flatMap(assessment => 
+        assessment.due_date.map(date => ({
+          date,
+          title: assessment.name,
+          type: 'assessment'
+        }))
+      ),
+    // Important deadlines
     ...(data.important_deadlines || [])
       .filter(deadline => {
-        const date = deadline.date || extractDateFromText(deadline.description)?.date;
+        const date = deadline.date || (deadline.description ? extractDateFromText(deadline.description)?.date : null);
         return date && typeof date === 'string';
       })
       .map(deadline => {
-        const date = deadline.date || extractDateFromText(deadline.description)?.date;
+        const date = deadline.date || (deadline.description ? extractDateFromText(deadline.description)?.date : null);
         return {
           date: date as string,
-          title: deadline.description,
+          title: deadline.description || 'Unnamed Deadline',
           type: 'deadline'
         };
+      }),
+    // Class schedule from ics_events
+    ...(data.ics_events || [])
+      .filter((event: ICSEvent) => event.recurrence && event.recurrence.includes('Every'))
+      .flatMap((event: ICSEvent) => {
+        // Parse the recurrence string to get days and times
+        const recurrencePattern = event.recurrence.replace('Every ', '');
+        const schedules = recurrencePattern.split(', ').map((schedule: string) => {
+          const [day, time] = schedule.split(' ');
+          const [startTime, endTime] = time.split('-');
+          return { day, startTime, endTime };
+        });
+
+        // Get the current month's dates for these days
+        const currentDate = new Date();
+        const firstDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+        const lastDay = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
+        
+        const classEvents = [];
+        for (let date = new Date(firstDay); date <= lastDay; date.setDate(date.getDate() + 1)) {
+          const daySchedule = schedules.find((s: { day: string }) => 
+            s.day.toLowerCase() === date.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase()
+          );
+          
+          if (daySchedule) {
+            const dateStr = date.toISOString().split('T')[0];
+            classEvents.push({
+              date: dateStr,
+              title: event.event_title || 'Class',
+              type: 'class',
+              location: event.location
+            });
+          }
+        }
+        
+        return classEvents;
       })
   ];
 
@@ -215,74 +187,182 @@ export default function SyllabusResults() {
     return new Date(a.date).getTime() - new Date(b.date).getTime();
   });
 
+  const handleDownloadCalendar = () => {
+    if (!syllabus?.icsContent) {
+      toast.error("No calendar data available");
+      return;
+    }
+
+    const blob = new Blob([syllabus.icsContent], { type: 'text/calendar' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${syllabus.title || 'syllabus'}_calendar.ics`;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+    toast.success("Calendar downloaded successfully");
+  };
+
+  const handleDelete = async () => {
+    try {
+      await deleteSyllabus(id!);
+      toast.success("Syllabus deleted successfully");
+      navigate("/user/syllabus-upload");
+    } catch (error) {
+      toast.error("Failed to delete syllabus");
+      console.error("Delete syllabus error:", error);
+    } finally {
+      setIsDeleteDialogOpen(false);
+    }
+  };
+
   return (
-    <div className="container mx-auto p-8">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+    <div className="container mx-auto p-8 mt-10">
+      {/* Top Section */}
+      <div className="rounded-xl p-8 pb-0">
+        {/* Greeting Section */}
+        <div className="mb-8">
+          <div className="flex flex-col">
+            <div className="flex items-center justify-between">
+              <h1 className="text-4xl font-bold">
+                Hi, {user?.firstName 
+                  ? `${user.firstName}${user.lastName ? ` ${user.lastName}` : ''}` 
+                  : 'there'}!
+              </h1>
+              <div className="flex items-center gap-3">
+                <div 
+                  className="flex items-center gap-2 bg-blue-50 px-4 py-2 rounded-full cursor-pointer hover:bg-blue-100 transition-colors"
+                  onClick={handleDownloadCalendar}
+                >
+                  <CalendarIcon className="w-4 h-4 text-blue-600" />
+                  <span className="text-blue-600 font-medium">Add to Calendar</span>
+                </div>
+                <div 
+                  className="flex items-center gap-2 bg-red-50 px-4 py-2 rounded-full cursor-pointer hover:bg-red-100 transition-colors"
+                  onClick={() => setIsDeleteDialogOpen(true)}
+                >
+                  <Trash2 className="w-4 h-4 text-red-600" />
+                  <span className="text-red-600 font-medium">Delete</span>
+                </div>
+                <div className="flex items-center gap-2 bg-gray-50 px-4 py-2 rounded-full cursor-pointer hover:bg-gray-100 transition-colors">
+                  <MessageCircle className="w-4 h-4 text-gray-600" />
+                  <span className="text-gray-600 font-medium">Chat</span>
+                </div>
+              </div>
+            </div>
+            <p className="text-gray-500 mt-2">
+              Welcome to {data.course_info?.name || 'your course'}! You are {data.assessments?.length || 0} assessments away from completing the course.
+            </p>
+          </div>
+        </div>
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {/* Completed Tasks */}
+          <div className="bg-gray-100 rounded-lg p-4 flex items-center justify-between">
+            <div>
+              <div className="text-sm text-gray-600">Completed tasks</div>
+              <div className="text-2xl font-bold">85%</div>
+            </div>
+            <ClipboardList className="w-6 h-6 text-gray-400" />
+          </div>
+
+          {/* Customer Rating */}
+          <div className="bg-[#DFFB92] rounded-lg p-4 flex items-center justify-between">
+            <div>
+              <div className="text-sm text-gray-600">Customer rating</div>
+              <div className="text-2xl font-bold">4.8</div>
+            </div>
+            <Star className="w-6 h-6 text-yellow-400" />
+          </div>
+
+          {/* Average Time */}
+          <div className="bg-[#E9DBFB] rounded-lg p-4 flex items-center justify-between">
+            <div>
+              <div className="text-sm text-gray-600">Avg. time</div>
+              <div className="text-2xl font-bold">3.5h</div>
+            </div>
+            <Clock className="w-6 h-6 text-purple-400" />
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-8">
         {/* Course Info Column */}
         <div className="space-y-8">
           {/* Course Info Section */}
-          <div className="border-2 border-gray-200 rounded-xl p-8">
+          <div className="rounded-xl p-8">
             <h2 className="text-3xl font-bold mb-6 border-b-2 border-gray-200 pb-4">
-              {data.course_info?.course_name && data.course_info?.course_code 
-                ? `${data.course_info.course_name} - ${data.course_info.course_code}`
-                : "Course Info"}
-            </h2>
-            <div className="space-y-6">
-              {/* Instructors */}
-              {data.instructors && data.instructors.length > 0 && (
-                <div className="space-y-3">
-                  <h3 className="text-lg font-semibold">Instructors</h3>
-                  {data.instructors.map((instructor, index) => (
-                    <div key={index} className="border-2 border-gray-100 rounded-lg p-4">
-                      <div className="font-medium">{instructor.name}</div>
-                      {instructor.email && (
-                        <div className="text-sm text-gray-500">{instructor.email}</div>
-                      )}
-                      {instructor.office && (
-                        <div className="text-sm text-gray-500">Office: {instructor.office}</div>
-                      )}
-                      {instructor.officeHours && (
-                        <div className="text-sm text-gray-500">Hours: {instructor.officeHours}</div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Course Website/Policies Section */}
-          <div className="border-2 border-gray-200 rounded-xl p-8">
-            <h2 className="text-3xl font-bold mb-6 border-b-2 border-gray-200 pb-4">Course Policies</h2>
-            <div className="space-y-4">
-              {data.policies && !isEmpty(data.policies) && (
-                <div className="space-y-3">
-                  {typeof data.policies === "string" ? (
-                    <div className="border-2 border-gray-100 rounded-lg p-4">
-                      {linkify(data.policies)}
-                    </div>
-                  ) : (
-                    filterEmptyEntries(data.policies).map(([key, value]) => (
-                      <div key={key} className="border-2 border-gray-100 rounded-lg p-4">
-                        <div className="font-medium mb-1">{toTitleCase(key)}</div>
-                        <div className="text-gray-600">
-                          {typeof value === "string" ? linkify(value) : String(value)}
-                        </div>
-                      </div>
-                    ))
+              <Link 
+                to={`/user/syllabus/${id}/course-info`} 
+                className="flex items-center gap-2 hover:text-blue-600 transition-colors group"
+              >
+                <div className="flex items-center gap-2">
+                  <span className="truncate" title={data.course_info?.name}>
+                    {data.course_info?.name || "Course Info"}
+                  </span>
+                  {data.course_info?.code && (
+                    <>
+                      <span className="text-gray-400">-</span>
+                      <span className="truncate" title={data.course_info.code}>
+                        {data.course_info.code}
+                      </span>
+                    </>
                   )}
                 </div>
-              )}
+                <ChevronRight className="w-5 h-5 opacity-0 group-hover:opacity-100 transition-opacity" />
+              </Link>
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <CourseInfo 
+                instructors={data.instructors || []} 
+                classSchedule={data.class_schedule}
+              />
+              <GradeBreakdown assessments={data.assessments || []} />
             </div>
           </div>
         </div>
 
         {/* Calendar Section */}
-        <div className="border-2 border-gray-200 rounded-xl p-8">
-          <h2 className="text-3xl font-bold mb-8 border-b-2 border-gray-200 pb-4">Calendar</h2>
+        <div className="rounded-xl p-8">
+          <h2 className="text-3xl font-bold mb-8 border-b-2 border-gray-200 pb-4">
+            <Link 
+              to={`/user/syllabus/${id}/calendar`}
+              className="flex items-center gap-2 hover:text-blue-600 transition-colors group"
+            >
+              <span>Calendar</span>
+              <ChevronRight className="w-5 h-5 opacity-0 group-hover:opacity-100 transition-opacity" />
+            </Link>
+          </h2>
           <Calendar dates={allDates} />
         </div>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Submission</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this syllabus? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={handleDelete} 
+              disabled={isDeleting}
+            >
+              {isDeleting ? "Deleting..." : "Delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

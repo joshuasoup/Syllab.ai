@@ -1,6 +1,9 @@
 export interface Assessment {
-  title: string;
-  date: string;
+  name: string;
+  weight: number[];
+  due_date: string[];
+  description?: string;
+  num_submissions?: number[];
 }
 
 export interface Deadline {
@@ -16,10 +19,8 @@ export interface Instructor {
 }
 
 export interface CourseInfo {
-  course_code?: string;
-  course_name?: string;
-  course_website?: string;
-  department?: string;
+  code?: string;
+  name?: string;
   term?: string;
   year?: string;
   credits?: string;
@@ -27,11 +28,17 @@ export interface CourseInfo {
 }
 
 export interface ClassSchedule {
-  days?: string[];
-  time?: string;
-  location?: string;
-  startDate?: string;
-  endDate?: string;
+  meeting_days_times: string;
+  location: string;
+}
+
+export interface ICSEvent {
+  event_title: string;
+  start_date: string;
+  end_date: string;
+  recurrence: string;
+  location: string;
+  description: string;
 }
 
 export interface Policy {
@@ -55,6 +62,7 @@ export interface SyllabusHighlights {
   policies?: Policy[];
   textbooks?: Textbook[];
   other_details?: string;
+  ics_events?: ICSEvent[];
 }
 
 export interface File {

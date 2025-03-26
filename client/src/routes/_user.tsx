@@ -134,7 +134,10 @@ const SideBar = ({ user, isCollapsed }: { user: User, isCollapsed: boolean }) =>
   return (
     <div className="flex flex-col flex-grow bg-background border-r h-full text-sm">
       <div className="px-3 py-4 border-b">
-        <Link to="/" className="flex items-center gap-2">
+        <Link 
+          to="/" 
+          className={`flex items-center gap-2 ${isCollapsed ? 'pointer-events-none' : ''}`}
+        >
           <img 
             src={logoUrl} 
             alt="SyllabAI Logo" 
@@ -271,7 +274,11 @@ export default function () {
             <SideBar user={data.user} isCollapsed={isSidebarCollapsed} />
             <button
               onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-              className="absolute -right-3 top-4 bg-white rounded-full p-1.5 shadow-md hover:bg-gray-50 transition-colors border"
+              className={`absolute bg-white rounded-full p-1.5 shadow-md hover:bg-gray-50 transition-colors border ${
+                isSidebarCollapsed 
+                  ? '-right-3 top-4' 
+                  : '-right-3 top-4'
+              }`}
             >
               {isSidebarCollapsed ? (
                 <ChevronRight className="h-4 w-4" />

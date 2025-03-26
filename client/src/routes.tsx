@@ -9,6 +9,7 @@ import SyllabusUpload from "./routes/user/syllabus/upload";
 import UserLayout, { loader as userLoader } from "./routes/_user";
 import AuthLayout from "./routes/_auth";
 import SyllabusResults from "./routes/user/syllabus/results/_user.syllabus-results.$id";
+import CalendarRoute from "./routes/user/syllabus/results/_user.syllabus-results.$id/calendar";
 import AuthCallback from "./routes/auth/callback";
 
 
@@ -62,6 +63,10 @@ export const router = createBrowserRouter([
           {
             path: "syllabus-results/:id",
             element: <SyllabusResults />,
+          },
+          {
+            path: "syllabus/:id/calendar",
+            element: <CalendarRoute />,
           },
           // Add other protected user routes here
         ],
