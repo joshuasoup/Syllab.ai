@@ -5,6 +5,7 @@ An AI-powered platform for creating and managing university schedule
 ## Project Overview
 
 Syllab.ai is a modern web application that helps educators create, manage, and share course syllabi efficiently.
+checkout out v0.0: https://syllabi--development.gadget.app/ 
 
 ## Tech Stack
 
