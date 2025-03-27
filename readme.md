@@ -32,7 +32,6 @@ checkout out v0.0: https://syllabi--development.gadget.app/
 
 ### Frontend
 
-- [ ] Complete user authentication UI
 - [ ] Create syllabus editor interface
 - [ ] Implement responsive design for all components
 - [ ] Add form validation
@@ -40,31 +39,14 @@ checkout out v0.0: https://syllabi--development.gadget.app/
 - [ ] Implement syllabus preview functionality
 - [ ] Add export options (PDF, Word)
 - [ ] Create user profile management
-- [ ] Add dark mode support
 
 ### Backend
 
-- [ ] Set up database connection
-- [ ] Implement user authentication API
-- [ ] Create syllabus CRUD operations
-- [ ] Set up file upload system
-- [ ] Implement caching layer
 - [ ] Add rate limiting
-- [ ] Set up logging system
-
-### Testing
-
-- [ ] Set up unit testing framework
-- [ ] Write frontend component tests
-- [ ] Write backend API tests
-- [ ] Implement end-to-end testing
-- [ ] Set up CI/CD pipeline
 
 ### Documentation
 
-- [ ] API documentation
 - [ ] User guide
-- [ ] Developer documentation
 - [ ] Deployment guide
 
 ## Getting Started
@@ -111,4 +93,4 @@ yarn run dev
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+none yet...
