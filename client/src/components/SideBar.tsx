@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -6,6 +7,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  
 } from "@/components/ui/dropdown-menu";
 import { Toaster } from "@/components/ui/sonner";
 import { ChevronDown, ChevronRight, FileText, LogOut, Menu, User as UserIcon, Folder } from "lucide-react";
@@ -13,6 +15,7 @@ import CommandKBadge from "@/components/shared/CommandKBadge";
 import { api } from "@/services/api";
 import type { User } from "@/types/user";
 import type { Syllabus } from "@/types/syllabus";
+>>>>>>> main
 // Import logo as URL using Vite's special import syntax
 import logoUrl from '@images/syllabai-logo.png';
 
@@ -26,18 +29,18 @@ interface UserMenuProps {
 const UserMenu = ({ user }: UserMenuProps) => {
   const [userMenuActive, setUserMenuActive] = useState(false);
   const navigate = useNavigate();
- 
+
   const getInitials = () => {
     return (
-      (user.firstName?.slice(0, 1) ?? "") + (user.lastName?.slice(0, 1) ?? "")
+      (user.firstName?.slice(0, 1) ?? '') + (user.lastName?.slice(0, 1) ?? '')
     ).toUpperCase();
   };
 
   const handleSignOut = async () => {
     await api.auth.signOut();
-    navigate("/auth/sign-in");
+    navigate('/auth/sign-in');
   };
- 
+
   return (
     <DropdownMenu open={userMenuActive} onOpenChange={setUserMenuActive}>
       <DropdownMenuTrigger asChild>
@@ -54,13 +57,13 @@ const UserMenu = ({ user }: UserMenuProps) => {
               )}
             </Avatar>
             <div className="flex flex-col items-start max-w-[140px]">
-              <span 
+              <span
                 className="text-sm font-medium truncate w-full"
                 title={user.firstName ?? user.email}
               >
                 {user.firstName ?? user.email}
               </span>
-              <span 
+              <span
                 className="text-xs text-gray-500 truncate w-full"
                 title={user.email}
               >
@@ -78,7 +81,7 @@ const UserMenu = ({ user }: UserMenuProps) => {
             Profile
           </Link>
         </DropdownMenuItem>
- 
+
         <DropdownMenuItem
           onClick={handleSignOut}
           className="flex items-center text-red-600 focus:text-red-600"
@@ -136,14 +139,11 @@ const SideBar = ({ user, isCollapsed }: SideBarProps) => {
   return (
     <div className="flex flex-col flex-grow bg-background border-r h-full text-sm">
       <div className="px-3 py-4 border-b">
-        <Link 
-          to="/" 
-          className={`flex items-center gap-2 ${isCollapsed ? 'pointer-events-none' : ''}`}
-        >
-          <img 
-            src={logoUrl} 
-            alt="SyllabAI Logo" 
-            className={`object-contain transition-all duration-300 ${isCollapsed ? 'w-8 h-8' : 'w-10 h-10'}`}
+        <Link to="/" className="flex items-center gap-2">
+          <img
+            src={logoUrl}
+            alt="SyllabAI Logo"
+            className="w-10 h-10 object-contain"
           />
           <span className={`text-2xl font-bold whitespace-nowrap transition-all duration-300 ${isCollapsed ? 'w-0 opacity-0' : 'w-auto opacity-100'}`}>
             <span className="text-black">SyllabAI</span>
@@ -170,46 +170,46 @@ const SideBar = ({ user, isCollapsed }: SideBarProps) => {
               )}
             </span>
           </button>
-          
-          <div className={`transition-all duration-300 ${isCollapsed ? 'h-0 opacity-0' : 'h-auto opacity-100'}`}>
-            {syllabusesOpen && !isCollapsed && (
-              <div className="ml-4 space-y-0.5 mt-0.5">
-                {fetching && (
-                  <div className="text-xs text-muted-foreground px-2 py-0.5">
-                    Loading...
-                  </div>
-                )}
-                
-                {error && (
-                  <div className="text-xs text-red-500 px-2 py-0.5">
-                    {error}
-                  </div>
-                )}
-                
-                {syllabuses && syllabuses.length === 0 && !fetching && (
-                  <div className="text-xs text-muted-foreground px-2 py-0.5">
-                    No syllabuses uploaded yet
-                  </div>
-                )}
-                
-                {syllabuses && syllabuses.map((syllabus: Syllabus) => (
+
+          {syllabusesOpen && (
+            <div className="ml-4 space-y-0.5 mt-0.5">
+              {fetching && (
+                <div className="text-xs text-muted-foreground px-2 py-0.5">
+                  Loading...
+                </div>
+              )}
+
+              {error && (
+                <div className="text-xs text-red-500 px-2 py-0.5">
+                  Error loading syllabuses
+                </div>
+              )}
+
+              {syllabuses && syllabuses.length === 0 && !fetching && (
+                <div className="text-xs text-muted-foreground px-2 py-0.5">
+                  No syllabuses uploaded yet
+                </div>
+              )}
+
+              {syllabuses &&
+                syllabuses.map((syllabus: Syllabus) => (
                   <Link
                     key={syllabus.id}
                     to={`/user/syllabus-results/${syllabus.id}`}
                     className={`flex items-center px-3 py-1.5 text-xs font-normal rounded-sm transition-colors text-muted-foreground
-                      ${
-                        location.pathname === `/user/syllabus-results/${syllabus.id}`
-                          ? "bg-accent/50 text-accent-foreground"
-                          : "hover:bg-accent/50 hover:text-accent-foreground"
-                      }`}
+                    ${
+                      location.pathname ===
+                      `/user/syllabus-results/${syllabus.id}`
+                        ? 'bg-accent/50 text-accent-foreground'
+                        : 'hover:bg-accent/50 hover:text-accent-foreground'
+                    }`}
                   >
-                    <FileText className="mr-1.5 h-4 w-4 text-gray-500 flex-shrink-0" />
-                    <span className="truncate whitespace-nowrap">{syllabus.title}</span>
+                    <FileText className="mr-1.5 h-4 w-4 text-gray-500" />
+                    <span className="truncate">{syllabus.title}</span>
                   </Link>
                 ))}
-              </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       </nav>
       <div className="mt-auto px-3 py-3">
@@ -247,9 +247,10 @@ const SideBarMenuButtonDrawer = ({ user }: SideBarMenuButtonDrawerProps) => {
       </button>
       <div
         className={`fixed inset-y-0 left-0 w-64 transform transition-transform duration-200 ease-in-out ${
-          isOpen ? "translate-x-0" : "-translate-x-full"
-        } bg-background shadow-lg z-20`}>
-        <SideBar user={user} isCollapsed={false} />
+          isOpen ? 'translate-x-0' : '-translate-x-full'
+        } bg-background shadow-lg z-20`}
+      >
+        <SideBar user={user} />
       </div>
 
       {isOpen && (

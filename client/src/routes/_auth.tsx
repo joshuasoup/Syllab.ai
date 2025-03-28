@@ -1,8 +1,8 @@
-import { Outlet, redirect, Link } from "react-router-dom";
-import { Toaster } from "@/components/ui/sonner";
+import { Outlet, redirect, Link } from 'react-router-dom';
+import { Toaster } from '@/components/ui/sonner';
 import logoUrl from '@images/syllabai-logo.png';
-import { getSession } from "@/lib/supabase";
-import { LoaderFunctionArgs } from "react-router-dom";
+import { getSession } from '@/lib/supabase';
+import { LoaderFunctionArgs } from 'react-router-dom';
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   try {
@@ -26,9 +26,9 @@ export default function AuthLayout() {
       <div className="w-full max-w-md">
         <div className="flex justify-center mb-6">
           <Link to="/">
-            <img 
-              src={logoUrl} 
-              alt="SyllabAI Logo" 
+            <img
+              src={logoUrl}
+              alt="SyllabAI Logo"
               className="w-12 h-12 object-contain"
             />
           </Link>
@@ -38,4 +38,4 @@ export default function AuthLayout() {
       <Toaster richColors />
     </div>
   );
-} 
+}
