@@ -7,7 +7,7 @@ import { api } from "@/services/api";
 import { useState, useEffect, FormEvent } from "react";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import GoogleAuthButton from "@/components/GoogleAuthButton";
+import GoogleAuthButton from "@/components/shared/GoogleAuthButton";
 
 // Define API error interface
 interface ApiError {
