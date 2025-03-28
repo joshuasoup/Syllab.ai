@@ -7,7 +7,7 @@ import { useForm } from "@/hooks/useForm";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { api } from "@/services/api";
 import { supabase } from "@/lib/supabase";
-import GoogleAuthButton from "@/components/GoogleAuthButton";
+import GoogleAuthButton from "@/components/shared/GoogleAuthButton";
 import { useState } from "react";
 
 interface SignInForm {
