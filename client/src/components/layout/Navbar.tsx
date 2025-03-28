@@ -1,11 +1,16 @@
-import React, { ReactNode } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { useAuth } from "../../hooks/useAuth";
-import { Button } from "../ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../ui/dropdown-menu";
-import { UserSilhouette } from "@/components/shared/UserSilhouette";
-import imgUrl from "@images/syllabai-logo.png";
+import React, { ReactNode } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../../hooks/useAuth';
+import { Button } from '../ui/button';
+import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '../ui/dropdown-menu';
+import { UserSilhouette } from '@/components/shared/UserSilhouette';
+import imgUrl from '@images/syllabai-logo.png';
 
 // Props interface for the Navbar component
 interface NavbarProps {
@@ -22,16 +27,18 @@ const UserMenu = () => {
 
   const handleSignOut = async () => {
     await signOut();
-    navigate("/");
+    navigate('/');
   };
 
-  const userInitials = user?.firstName?.[0] && user?.lastName?.[0]
-    ? `${user.firstName[0]}${user.lastName[0]}`
-    : user?.email?.[0]?.toUpperCase() ?? "U";
+  const userInitials =
+    user?.firstName?.[0] && user?.lastName?.[0]
+      ? `${user.firstName[0]}${user.lastName[0]}`
+      : user?.email?.[0]?.toUpperCase() ?? 'U';
 
-  const userName = user?.firstName && user?.lastName
-    ? `${user.firstName} ${user.lastName}`
-    : user?.email ?? "User";
+  const userName =
+    user?.firstName && user?.lastName
+      ? `${user.firstName} ${user.lastName}`
+      : user?.email ?? 'User';
 
   return (
     <DropdownMenu>
@@ -65,9 +72,7 @@ const UserMenu = () => {
         <DropdownMenuItem asChild>
           <Link to="/profile">Profile</Link>
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={handleSignOut}>
-          Sign out
-        </DropdownMenuItem>
+        <DropdownMenuItem onClick={handleSignOut}>Sign out</DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );
@@ -76,15 +81,12 @@ const UserMenu = () => {
 // Navbar component
 export const Navbar = () => {
   const { user } = useAuth();
-  
+
   return (
     <div className="fixed top-0 left-0 w-full bg-white z-50 py-4 px-0">
       {/* max-w-7xl is what gets the padding */}
       <div className="max-w-7xl mx-auto flex justify-between items-center">
-        <Link
-          to="/"
-          className="text-2xl font-semibold flex items-center gap-2"
-        >
+        <Link to="/user/syllabus-upload" className="text-2xl font-semibold flex items-center gap-2">
           <img src={imgUrl} alt="SyllabAI Logo" className="h-8 w-8 mr-2" />
           <span className="text-black" style={{ fontWeight: 600 }}>
             SyllabAI
@@ -99,7 +101,9 @@ export const Navbar = () => {
             className="w-14 h-14 p-0 flex items-center justify-center transition-all border border-transparent"
             asChild
           >
-            <Link to="auth/sign-up"><UserSilhouette className="text-black w-full h-full" /></Link>
+            <Link to="auth/sign-up">
+              <UserSilhouette className="text-black w-full h-full" />
+            </Link>
           </Button>
         )}
       </div>
