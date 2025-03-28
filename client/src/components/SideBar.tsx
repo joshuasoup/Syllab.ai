@@ -1,29 +1,26 @@
-import React, { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+
+import React, { useState, useEffect } from "react";
+import { Link, useLocation } from "react-router-dom";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Toaster } from '@/components/ui/sonner';
-import {
-  ChevronDown,
-  ChevronRight,
-  FileText,
-  LogOut,
-  Menu,
-  User as UserIcon,
-  Folder,
-} from 'lucide-react';
-import CommandKBadge from '@/components/shared/CommandKBadge';
-import { api } from '@/services/api';
-import { useFindMany } from '@/hooks/useFindMany';
-import type { User } from '@/types/user';
-import type { Syllabus } from '@/types/syllabus';
+  
+} from "@/components/ui/dropdown-menu";
+import { Toaster } from "@/components/ui/sonner";
+import { ChevronDown, ChevronRight, FileText, LogOut, Menu, User as UserIcon, Folder } from "lucide-react";
+import CommandKBadge from "@/components/shared/CommandKBadge";
+import { api } from "@/services/api";
+import type { User } from "@/types/user";
+import type { Syllabus } from "@/types/syllabus";
+>>>>>>> main
 // Import logo as URL using Vite's special import syntax
 import logoUrl from '@images/syllabai-logo.png';
+
+// Make sure sidebar shows all syllabus even without reloading for the most recent one
+import { eventEmitter } from '../utils/eventEmitter';
 
 interface UserMenuProps {
   user: User;
@@ -99,19 +96,45 @@ const UserMenu = ({ user }: UserMenuProps) => {
 
 interface SideBarProps {
   user: User;
+  isCollapsed: boolean;
 }
 
-export function SideBar({ user }: SideBarProps) {
+const SideBar = ({ user, isCollapsed }: SideBarProps) => {
   const location = useLocation();
   const [syllabusesOpen, setSyllabusesOpen] = useState(true);
+  const [syllabuses, setSyllabuses] = useState<Syllabus[] | null>(null);
+  const [fetching, setFetching] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const [{ data: syllabuses, fetching, error }] = useFindMany(
-    api.syllabus.getAll,
-    {
-      maxRetries: 3,
-      retryDelay: 2000,
+  // Function to fetch syllabuses
+  const fetchSyllabuses = async () => {
+    setFetching(true);
+    setError(null);
+    try {
+      const response = await api.syllabus.getAll(); // Fetch syllabuses from API
+      setSyllabuses(response.data);
+    } catch (err) {
+      setError("Error loading syllabuses");
+    } finally {
+      setFetching(false);
     }
-  );
+  };
+
+  // Fetch syllabuses on component mount
+  useEffect(() => {
+    fetchSyllabuses();
+    // Listen for the "syllabusAdded" event
+    const handleSyllabusAdded = () => {
+      fetchSyllabuses(); // Re-fetch syllabuses
+    };
+
+    eventEmitter.on("syllabusAdded", handleSyllabusAdded);
+
+    // Cleanup listener on unmount
+    return () => {
+      eventEmitter.off("syllabusAdded", handleSyllabusAdded);
+    };
+  }, []); // Empty dependency array since we only want to set up the listener once
 
   return (
     <div className="flex flex-col flex-grow bg-background border-r h-full text-sm">
@@ -122,7 +145,7 @@ export function SideBar({ user }: SideBarProps) {
             alt="SyllabAI Logo"
             className="w-10 h-10 object-contain"
           />
-          <span className="text-2xl font-bold">
+          <span className={`text-2xl font-bold whitespace-nowrap transition-all duration-300 ${isCollapsed ? 'w-0 opacity-0' : 'w-auto opacity-100'}`}>
             <span className="text-black">SyllabAI</span>
           </span>
         </Link>
@@ -134,14 +157,18 @@ export function SideBar({ user }: SideBarProps) {
             className="flex items-center justify-between w-full px-3 py-1.5 text-sm font-medium text-left rounded-sm transition-colors hover:bg-accent hover:text-accent-foreground"
           >
             <div className="flex items-center">
-              <Folder className="mr-2 h-4 w-4" />
-              My Syllabuses
+              <Folder className={`${isCollapsed ? 'w-4 h-4' : 'w-4 h-4 mr-2'}`} />
+              <span className={`whitespace-nowrap transition-all duration-300 ${isCollapsed ? 'w-0 opacity-0' : 'w-auto opacity-100'}`}>
+                My Syllabuses
+              </span>
             </div>
-            {syllabusesOpen ? (
-              <ChevronDown className="h-3 w-3" />
-            ) : (
-              <ChevronRight className="h-3 w-3" />
-            )}
+            <span className={`transition-all duration-300 ${isCollapsed ? 'w-0 opacity-0' : 'w-auto opacity-100'}`}>
+              {syllabusesOpen ? (
+                <ChevronDown className="h-3 w-3" />
+              ) : (
+                <ChevronRight className="h-3 w-3" />
+              )}
+            </span>
           </button>
 
           {syllabusesOpen && (
@@ -185,19 +212,23 @@ export function SideBar({ user }: SideBarProps) {
           )}
         </div>
       </nav>
-      <div className="mt-auto px-3 py-3 ">
-        <UserMenu user={user} />
+      <div className="mt-auto px-3 py-3">
+        <div className={`transition-all duration-300 ${isCollapsed ? 'h-0 opacity-0' : 'h-auto opacity-100'}`}>
+          <UserMenu user={user} />
+        </div>
         <Link
           to="/user/syllabus-upload"
-          className="flex items-center w-full px-3 py-2 mb-3 mt-4 text-sm font-medium rounded-sm bg-blue-600 hover:bg-blue-700 text-white transition-colors"
+          className={`flex items-center w-full px-3 py-2 mb-3 mt-4 text-sm font-medium rounded-sm bg-blue-600 hover:bg-blue-700 text-white transition-colors ${isCollapsed ? 'justify-center' : ''}`}
         >
-          <FileText className="mr-2 h-3 w-3" />
-          Upload New Syllabus
+          <FileText className={`${isCollapsed ? 'w-4 h-4' : 'w-3 h-3 mr-2 flex-shrink-0'}`} />
+          <span className={`whitespace-nowrap transition-all duration-300 ${isCollapsed ? 'w-0 opacity-0' : 'w-auto opacity-100'}`}>
+            Upload New Syllabus
+          </span>
         </Link>
       </div>
     </div>
   );
-}
+};
 
 interface SideBarMenuButtonDrawerProps {
   user: User;

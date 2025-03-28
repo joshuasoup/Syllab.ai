@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { api } from "@/services/api";
 import { Progress } from "@/components/ui/progress";
 import type { Syllabus, Assessment, Deadline } from "@/types/syllabus";
+import { eventEmitter } from "../../../utils/eventEmitter";
 
 interface ProcessingProgressBarProps {
   progress: number;
@@ -150,6 +151,10 @@ export default function SyllabusUpload() {
         
         setProgress(100);
         setProcessingStage("Processing complete");
+
+        // Emit the event to notify other components
+        eventEmitter.emit("syllabusAdded");
+
 
         const extractedDates: Array<{ date: string; description: string; }> = [];
         if (processed?.highlights) {

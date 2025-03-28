@@ -4,22 +4,14 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Toaster } from '@/components/ui/sonner';
-import {
-  ChevronDown,
-  ChevronRight,
-  FileText,
-  LogOut,
-  Menu,
-  User as UserIcon,
-  Folder,
-  ChevronLeft,
-} from 'lucide-react';
-import CommandKBadge from '@/components/shared/CommandKBadge';
-import { useState } from 'react';
-import { api } from '@/services/api';
-import { useFindMany } from '@/hooks/useFindMany';
+} from "@/components/ui/dropdown-menu";
+import { Toaster } from "@/components/ui/sonner";
+import { ChevronDown, ChevronRight, FileText, LogOut, Menu, User as UserIcon, Folder, ChevronLeft } from "lucide-react";
+import CommandKBadge from "@/components/shared/CommandKBadge";
+import { useState, useEffect } from "react";
+import { api } from "@/services/api";
+import { useFindMany } from "@/hooks/useFindMany";
+
 import {
   Link,
   Outlet,
@@ -35,6 +27,7 @@ import type { Syllabus } from '@/types/syllabus';
 import { getSession } from '@/lib/supabase';
 // Import logo as URL using Vite's special import syntax
 import logoUrl from '@images/syllabai-logo.png';
+import { eventEmitter } from "@/utils/eventEmitter";
 
 interface RootOutletContext {
   user?: User;
@@ -141,13 +134,24 @@ const SideBar = ({
   const location = useLocation();
   const [syllabusesOpen, setSyllabusesOpen] = useState(true);
 
-  const [{ data: syllabuses, fetching, error }] = useFindMany(
-    api.syllabus.getAll,
-    {
-      maxRetries: 3,
-      retryDelay: 2000,
-    }
-  );
+  const [{ data: syllabuses, fetching, error }, fetchSyllabuses] = useFindMany(api.syllabus.getAll, {
+    maxRetries: 3,
+    retryDelay: 2000
+  });
+
+  // Listen for syllabus updates
+  useEffect(() => {
+    const handleSyllabusAdded = () => {
+      fetchSyllabuses(); // Re-fetch syllabuses when a new one is added
+    };
+
+    eventEmitter.on("syllabusAdded", handleSyllabusAdded);
+
+    // Cleanup listener on unmount
+    return () => {
+      eventEmitter.off("syllabusAdded", handleSyllabusAdded);
+    };
+  }, [fetchSyllabuses]);
 
   return (
     <div className="flex flex-col flex-grow bg-background border-r h-full text-sm">
