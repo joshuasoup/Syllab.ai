@@ -1,27 +1,37 @@
 // web/routes/_user.syllabus-result.$id/index.tsx
 
-import React, { useState } from "react";
-import { useParams, Link, useNavigate, useOutletContext } from "react-router-dom";
-import { api } from "@/services/api";
-import { useFindOne } from "@/hooks/useFindOne";
-import type { Syllabus, ICSEvent } from "@/types/syllabus";
-import { toast } from "sonner";
-import { filterEmptyEntries, isEmpty } from "./SyllabusHelpers";
-import { toTitleCase, linkify, TimelineItem, extractDateFromText } from "@/components/features/syllabus/SubComponents";
-import { Calendar } from "@/components/features/syllabus/Calendar";
-import { CourseInfo } from "@/components/features/syllabus/CourseInfo";
-import { GradeBreakdown } from "@/components/features/syllabus/GradeBreakdown";
-import { 
-  Calendar as CalendarIcon, 
-  Trash2, 
-  MessageCircle, 
-  ClipboardList, 
-  Star, 
+import React, { useState } from 'react';
+import {
+  useParams,
+  Link,
+  useNavigate,
+  useOutletContext,
+} from 'react-router-dom';
+import { api } from '@/services/api';
+import { useFindOne } from '@/hooks/useFindOne';
+import type { Syllabus, ICSEvent } from '@/types/syllabus';
+import { toast } from 'sonner';
+import { filterEmptyEntries, isEmpty } from './SyllabusHelpers';
+import {
+  toTitleCase,
+  linkify,
+  TimelineItem,
+  extractDateFromText,
+} from '@/components/features/syllabus/SubComponents';
+import { Calendar } from '@/components/features/syllabus/Calendar';
+import { CourseInfo } from '@/components/features/syllabus/CourseInfo';
+import { GradeBreakdown } from '@/components/features/syllabus/GradeBreakdown';
+import {
+  Calendar as CalendarIcon,
+  Trash2,
+  MessageCircle,
+  ClipboardList,
+  Star,
   Clock,
-  ChevronRight
-} from "lucide-react";
-import type { AuthOutletContext } from "@/routes/_user";
-import { useAction } from "@/hooks/useAction";
+  ChevronRight,
+} from 'lucide-react';
+import type { AuthOutletContext } from '@/routes/_user';
+import { useAction } from '@/hooks/useAction';
 import {
   Dialog,
   DialogContent,
@@ -39,7 +49,9 @@ export default function SyllabusResults() {
   const { user } = useOutletContext<AuthOutletContext>();
 
   // Validate ID
-  const isValidId = id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+  const isValidId =
+    id &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
 
   // Create a memoized fetch function
   const fetchSyllabus = React.useCallback(() => {
@@ -52,7 +64,7 @@ export default function SyllabusResults() {
     { 
       enabled: Boolean(id && isValidId),
       maxRetries: 3,
-      retryDelay: 2000
+      retryDelay: 2000,
     }
   );
 
@@ -62,9 +74,12 @@ export default function SyllabusResults() {
       <div className="min-h-screen flex flex-col items-center justify-center p-4">
         <div className="text-center">
           <p className="text-red-600 mb-4">
-            {!id ? "No syllabus ID was provided." : "Invalid syllabus ID."}
+            {!id ? 'No syllabus ID was provided.' : 'Invalid syllabus ID.'}
           </p>
-          <Link to="/syllabus-upload" className="text-blue-600 hover:text-blue-800">
+          <Link
+            to="/syllabus-upload"
+            className="text-blue-600 hover:text-blue-800"
+          >
             Back to Dashboard
           </Link>
         </div>
@@ -100,7 +115,10 @@ export default function SyllabusResults() {
       <div className="min-h-screen flex flex-col items-center justify-center p-4">
         <div className="text-center">
           <p className="text-red-600 mb-4">Error: {error.message}</p>
-          <Link to="/syllabus-upload" className="text-blue-600 hover:text-blue-800">
+          <Link
+            to="/syllabus-upload"
+            className="text-blue-600 hover:text-blue-800"
+          >
             Back to Dashboard
           </Link>
         </div>
@@ -113,7 +131,10 @@ export default function SyllabusResults() {
       <div className="min-h-screen flex flex-col items-center justify-center p-4">
         <div className="text-center">
           <p className="text-gray-600 mb-4">Syllabus not found</p>
-          <Link to="/syllabus-upload" className="text-blue-600 hover:text-blue-800">
+          <Link
+            to="/syllabus-upload"
+            className="text-blue-600 hover:text-blue-800"
+          >
             Back to Dashboard
           </Link>
         </div>
@@ -136,64 +157,95 @@ export default function SyllabusResults() {
   const allDates = [
     // Assessment dates
     ...(data.assessments || [])
-      .filter(assessment => assessment.due_date && assessment.due_date.length > 0)
-      .flatMap(assessment => 
-        assessment.due_date.map(date => ({
+      .filter(
+        (assessment) => assessment.due_date && assessment.due_date.length > 0
+      )
+      .flatMap((assessment) =>
+        assessment.due_date.map((date) => ({
           date,
           title: assessment.name,
-          type: 'assessment'
+          type: 'assessment',
         }))
       ),
     // Important deadlines
     ...(data.important_deadlines || [])
-      .filter(deadline => {
-        const date = deadline.date || (deadline.description ? extractDateFromText(deadline.description)?.date : null);
+      .filter((deadline) => {
+        const date =
+          deadline.date ||
+          (deadline.description
+            ? extractDateFromText(deadline.description)?.date
+            : null);
         return date && typeof date === 'string';
       })
-      .map(deadline => {
-        const date = deadline.date || (deadline.description ? extractDateFromText(deadline.description)?.date : null);
+      .map((deadline) => {
+        const date =
+          deadline.date ||
+          (deadline.description
+            ? extractDateFromText(deadline.description)?.date
+            : null);
         return {
           date: date as string,
           title: deadline.description || 'Unnamed Deadline',
-          type: 'deadline'
+          type: 'deadline',
         };
       }),
     // Class schedule from ics_events
     ...(data.ics_events || [])
-      .filter((event: ICSEvent) => event.recurrence && event.recurrence.includes('Every'))
+      .filter(
+        (event: ICSEvent) =>
+          event.recurrence && event.recurrence.includes('Every')
+      )
       .flatMap((event: ICSEvent) => {
         // Parse the recurrence string to get days and times
         const recurrencePattern = event.recurrence.replace('Every ', '');
-        const schedules = recurrencePattern.split(', ').map((schedule: string) => {
-          const [day, time] = schedule.split(' ');
-          const [startTime, endTime] = time.split('-');
-          return { day, startTime, endTime };
-        });
+        const schedules = recurrencePattern
+          .split(', ')
+          .map((schedule: string) => {
+            const [day, time] = schedule.split(' ');
+            const [startTime, endTime] = time.split('-');
+            return { day, startTime, endTime };
+          });
 
         // Get the current month's dates for these days
         const currentDate = new Date();
-        const firstDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
-        const lastDay = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
-        
+        const firstDay = new Date(
+          currentDate.getFullYear(),
+          currentDate.getMonth(),
+          1
+        );
+        const lastDay = new Date(
+          currentDate.getFullYear(),
+          currentDate.getMonth() + 1,
+          0
+        );
+
         const classEvents = [];
-        for (let date = new Date(firstDay); date <= lastDay; date.setDate(date.getDate() + 1)) {
-          const daySchedule = schedules.find((s: { day: string }) => 
-            s.day.toLowerCase() === date.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase()
+        for (
+          let date = new Date(firstDay);
+          date <= lastDay;
+          date.setDate(date.getDate() + 1)
+        ) {
+          const daySchedule = schedules.find(
+            (s: { day: string }) =>
+              s.day.toLowerCase() ===
+              date
+                .toLocaleDateString('en-US', { weekday: 'long' })
+                .toLowerCase()
           );
-          
+
           if (daySchedule) {
             const dateStr = date.toISOString().split('T')[0];
             classEvents.push({
               date: dateStr,
               title: event.event_title || 'Class',
               type: 'class',
-              location: event.location
+              location: event.location,
             });
           }
         }
-        
+
         return classEvents;
-      })
+      }),
   ];
 
   // Sort dates chronologically
@@ -204,7 +256,7 @@ export default function SyllabusResults() {
 
   const handleDownloadCalendar = () => {
     if (!syllabus?.icsContent) {
-      toast.error("No calendar data available");
+      toast.error('No calendar data available');
       return;
     }
 
@@ -217,7 +269,7 @@ export default function SyllabusResults() {
     a.click();
     window.URL.revokeObjectURL(url);
     document.body.removeChild(a);
-    toast.success("Calendar downloaded successfully");
+    toast.success('Calendar downloaded successfully');
   };
 
   return (
@@ -229,17 +281,23 @@ export default function SyllabusResults() {
           <div className="flex flex-col">
             <div className="flex items-center justify-between">
               <h1 className="text-4xl font-bold">
-                Hi, {user?.firstName 
-                  ? `${user.firstName}${user.lastName ? ` ${user.lastName}` : ''}` 
-                  : 'there'}!
+                Hey{' '}
+                {user?.firstName
+                  ? `${user.firstName}${
+                      user.lastName ? ` ${user.lastName}` : ''
+                    }`
+                  : 'there'}
+                !
               </h1>
               <div className="flex items-center gap-3">
-                <div 
+                <div
                   className="flex items-center gap-2 bg-blue-50 px-4 py-2 rounded-full cursor-pointer hover:bg-blue-100 transition-colors"
                   onClick={handleDownloadCalendar}
                 >
                   <CalendarIcon className="w-4 h-4 text-blue-600" />
-                  <span className="text-blue-600 font-medium">Add to Calendar</span>
+                  <span className="text-blue-600 font-medium">
+                    Add to Calendar
+                  </span>
                 </div>
                 <DeleteSyllabusButton 
                   syllabusId={id!}
@@ -253,8 +311,10 @@ export default function SyllabusResults() {
                 </div>
               </div>
             </div>
-            <p className="text-gray-500 mt-2">
-              Welcome to {data.course_info?.name || 'your course'}! You are {data.assessments?.length || 0} assessments away from completing the course.
+            <p className="text-gray-500 mt-2" style={{ fontWeight: 500 }}>
+              Welcome to {data.course_info?.name || 'your course'}! You are{' '}
+              {data.assessments?.length || 0} assessments away from completing
+              the course.
             </p>
           </div>
         </div>
@@ -296,13 +356,13 @@ export default function SyllabusResults() {
           {/* Course Info Section */}
           <div className="rounded-xl p-8">
             <h2 className="text-3xl font-bold mb-6 border-b-2 border-gray-200 pb-4">
-              <Link 
-                to={`/user/syllabus/${id}/course-info`} 
+              <Link
+                to={`/user/syllabus/${id}/course-info`}
                 className="flex items-center gap-2 hover:text-blue-600 transition-colors group"
               >
                 <div className="flex items-center gap-2">
                   <span className="truncate" title={data.course_info?.name}>
-                    {data.course_info?.name || "Course Info"}
+                    {data.course_info?.name || 'Course Info'}
                   </span>
                   {data.course_info?.code && (
                     <>
@@ -317,8 +377,8 @@ export default function SyllabusResults() {
               </Link>
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <CourseInfo 
-                instructors={data.instructors || []} 
+              <CourseInfo
+                instructors={data.instructors || []}
                 classSchedule={data.class_schedule}
               />
               <GradeBreakdown assessments={data.assessments || []} />
@@ -329,7 +389,7 @@ export default function SyllabusResults() {
         {/* Calendar Section */}
         <div className="rounded-xl p-8">
           <h2 className="text-3xl font-bold mb-8 border-b-2 border-gray-200 pb-4">
-            <Link 
+            <Link
               to={`/user/syllabus/${id}/calendar`}
               className="flex items-center gap-2 hover:text-blue-600 transition-colors group"
             >
@@ -339,7 +399,6 @@ export default function SyllabusResults() {
           </h2>
           <Calendar dates={allDates} />
         </div>
-      </div>
     </div>
   );
 }
