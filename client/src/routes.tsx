@@ -6,6 +6,7 @@ import SignIn from "./routes/auth/sign-in";
 import SignUp from "./routes/auth/sign-up";
 import VerifyEmail from "./routes/auth/verify-email";
 import SyllabusUpload from "./routes/user/syllabus/upload";
+import RenameSyllabus from "./routes/user/syllabus/rename";
 import UserLayout, { loader as userLoader } from "./routes/_user";
 import AuthLayout from "./routes/_auth";
 import SyllabusResults from "./routes/user/syllabus/results/_user.syllabus-results.$id";
@@ -59,6 +60,10 @@ export const router = createBrowserRouter([
           {
             path: "syllabus-upload",
             element: <SyllabusUpload />,
+          },
+          {
+            path: "syllabus/rename/:id",
+            element: <RenameSyllabus />,
           },
           {
             path: "syllabus-results/:id",

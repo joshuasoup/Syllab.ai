@@ -29,6 +29,9 @@ import {
   Star,
   Clock,
   ChevronRight,
+  Share2,
+  ExternalLink,
+  Twitter,
 } from 'lucide-react';
 import type { AuthOutletContext } from '@/routes/_user';
 import { useAction } from '@/hooks/useAction';
@@ -39,27 +42,30 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { DeleteSyllabusButton } from "@/components/features/syllabus/DeleteSyllabusButton";
+import { Badge } from "@/components/ui/badge";
 
 export default function SyllabusResults() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useOutletContext<AuthOutletContext>();
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [{ fetching: isDeleting }, deleteSyllabus] = useAction((id: string) =>
-    api.syllabus.delete(id)
-  );
 
   // Validate ID
   const isValidId =
     id &&
     /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
 
-  // Fetch syllabus data
+  // Create a memoized fetch function
+  const fetchSyllabus = React.useCallback(() => {
+    return api.syllabus.getById(id!);
+  }, [id]);
+
+  // Fetch syllabus data with proper dependency on id
   const [{ data: syllabus, fetching, error }] = useFindOne<Syllabus>(
-    () => api.syllabus.getById(id!),
-    {
+    fetchSyllabus,
+    { 
       enabled: Boolean(id && isValidId),
       maxRetries: 3,
       retryDelay: 2000,
@@ -94,10 +100,18 @@ export default function SyllabusResults() {
   }
 
   if (error) {
+    console.error('Error fetching syllabus:', error);
     // Handle authentication errors
     if (error.message.includes('Authentication failed')) {
       toast.error('Your session has expired. Please sign in again.');
       navigate('/auth/sign-in');
+      return null;
+    }
+
+    // Handle not found errors
+    if (error.message.includes('Not Found')) {
+      toast.error('Syllabus not found. It may have been deleted.');
+      navigate('/user/syllabus-upload');
       return null;
     }
 
@@ -136,6 +150,9 @@ export default function SyllabusResults() {
   const data = highlights || {};
 
   // Debug logging
+  console.log('Syllabus ID:', id);
+  console.log('Syllabus Data:', syllabus);
+  console.log('Highlights:', highlights);
   console.log('Course Info:', data.course_info);
   console.log('Full Data:', data);
   console.log('Assessments:', data.assessments);
@@ -259,19 +276,6 @@ export default function SyllabusResults() {
     toast.success('Calendar downloaded successfully');
   };
 
-  const handleDelete = async () => {
-    try {
-      await deleteSyllabus(id!);
-      toast.success('Syllabus deleted successfully');
-      navigate('/user/syllabus-upload');
-    } catch (error) {
-      toast.error('Failed to delete syllabus');
-      console.error('Delete syllabus error:', error);
-    } finally {
-      setIsDeleteDialogOpen(false);
-    }
-  };
-
   return (
     <div className="container mx-auto p-8 mt-10">
       {/* Top Section */}
@@ -299,13 +303,12 @@ export default function SyllabusResults() {
                     Add to Calendar
                   </span>
                 </div>
-                <div
-                  className="flex items-center gap-2 bg-red-50 px-4 py-2 rounded-full cursor-pointer hover:bg-red-100 transition-colors"
-                  onClick={() => setIsDeleteDialogOpen(true)}
-                >
-                  <Trash2 className="w-4 h-4 text-red-600" />
-                  <span className="text-red-600 font-medium">Delete</span>
-                </div>
+                <DeleteSyllabusButton 
+                  syllabusId={id!}
+                  variant="ghost"
+                  className="flex items-center gap-2 bg-red-50 px-4 py-2 rounded-full hover:bg-red-100 transition-colors"
+                  redirectTo="/user/syllabus-upload"
+                />
                 <div className="flex items-center gap-2 bg-gray-50 px-4 py-2 rounded-full cursor-pointer hover:bg-gray-100 transition-colors">
                   <MessageCircle className="w-4 h-4 text-gray-600" />
                   <span className="text-gray-600 font-medium">Chat</span>
@@ -402,33 +405,57 @@ export default function SyllabusResults() {
         </div>
       </div>
 
-      {/* Delete Confirmation Dialog */}
-      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Delete Submission</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to delete this syllabus? This action cannot
-              be undone.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
+      <div className="flex flex-col gap-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-bold">{syllabus.title}</h1>
+            <Badge variant="outline" className="text-xs">
+              {syllabus.highlights?.course_info?.code || 'No course code'}
+            </Badge>
+          </div>
+          <div className="flex items-center gap-2">
             <Button
               variant="outline"
-              onClick={() => setIsDeleteDialogOpen(false)}
+              size="sm"
+              onClick={() => {
+                const url = window.location.href;
+                navigator.clipboard.writeText(url);
+                toast.success("Link copied to clipboard");
+              }}
             >
-              Cancel
+              <Share2 className="h-4 w-4 mr-2" />
+              Share
             </Button>
             <Button
-              variant="destructive"
-              onClick={handleDelete}
-              disabled={isDeleting}
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                const url = window.location.href;
+                window.open(url, '_blank');
+              }}
             >
-              {isDeleting ? 'Deleting...' : 'Delete'}
+              <ExternalLink className="h-4 w-4 mr-2" />
+              Open in New Tab
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                const url = window.location.href;
+                window.open(`https://twitter.com/intent/tweet?url=${encodeURIComponent(url)}&text=${encodeURIComponent(`Check out my syllabus for ${syllabus.highlights?.course_info?.code || 'No course code'}: ${syllabus.title}`)}`, '_blank');
+              }}
+            >
+              <Twitter className="h-4 w-4 mr-2" />
+              Share on Twitter
+            </Button>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <span>Last updated: {new Date(syllabus.updatedAt).toLocaleDateString()}</span>
+          <span>•</span>
+          <span>Created: {new Date(syllabus.createdAt).toLocaleDateString()}</span>
+        </div>
+      </div>
     </div>
   );
 }
