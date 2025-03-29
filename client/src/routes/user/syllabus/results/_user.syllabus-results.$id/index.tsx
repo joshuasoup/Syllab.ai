@@ -31,20 +31,24 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { DeleteSyllabusButton } from "@/components/features/syllabus/DeleteSyllabusButton";
 
 export default function SyllabusResults() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useOutletContext<AuthOutletContext>();
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [{ fetching: isDeleting }, deleteSyllabus] = useAction((id: string) => api.syllabus.delete(id));
 
   // Validate ID
   const isValidId = id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
 
-  // Fetch syllabus data
+  // Create a memoized fetch function
+  const fetchSyllabus = React.useCallback(() => {
+    return api.syllabus.getById(id!);
+  }, [id]);
+
+  // Fetch syllabus data with proper dependency on id
   const [{ data: syllabus, fetching, error }] = useFindOne<Syllabus>(
-    () => api.syllabus.getById(id!),
+    fetchSyllabus,
     { 
       enabled: Boolean(id && isValidId),
       maxRetries: 3,
@@ -77,10 +81,18 @@ export default function SyllabusResults() {
   }
 
   if (error) {
+    console.error('Error fetching syllabus:', error);
     // Handle authentication errors
     if (error.message.includes('Authentication failed')) {
       toast.error('Your session has expired. Please sign in again.');
       navigate('/auth/sign-in');
+      return null;
+    }
+
+    // Handle not found errors
+    if (error.message.includes('Not Found')) {
+      toast.error('Syllabus not found. It may have been deleted.');
+      navigate('/user/syllabus-upload');
       return null;
     }
 
@@ -113,6 +125,9 @@ export default function SyllabusResults() {
   const data = highlights || {};
 
   // Debug logging
+  console.log('Syllabus ID:', id);
+  console.log('Syllabus Data:', syllabus);
+  console.log('Highlights:', highlights);
   console.log('Course Info:', data.course_info);
   console.log('Full Data:', data);
   console.log('Assessments:', data.assessments);
@@ -205,19 +220,6 @@ export default function SyllabusResults() {
     toast.success("Calendar downloaded successfully");
   };
 
-  const handleDelete = async () => {
-    try {
-      await deleteSyllabus(id!);
-      toast.success("Syllabus deleted successfully");
-      navigate("/user/syllabus-upload");
-    } catch (error) {
-      toast.error("Failed to delete syllabus");
-      console.error("Delete syllabus error:", error);
-    } finally {
-      setIsDeleteDialogOpen(false);
-    }
-  };
-
   return (
     <div className="container mx-auto p-8 mt-10">
       {/* Top Section */}
@@ -239,13 +241,12 @@ export default function SyllabusResults() {
                   <CalendarIcon className="w-4 h-4 text-blue-600" />
                   <span className="text-blue-600 font-medium">Add to Calendar</span>
                 </div>
-                <div 
-                  className="flex items-center gap-2 bg-red-50 px-4 py-2 rounded-full cursor-pointer hover:bg-red-100 transition-colors"
-                  onClick={() => setIsDeleteDialogOpen(true)}
-                >
-                  <Trash2 className="w-4 h-4 text-red-600" />
-                  <span className="text-red-600 font-medium">Delete</span>
-                </div>
+                <DeleteSyllabusButton 
+                  syllabusId={id!}
+                  variant="ghost"
+                  className="flex items-center gap-2 bg-red-50 px-4 py-2 rounded-full hover:bg-red-100 transition-colors"
+                  redirectTo="/user/syllabus-upload"
+                />
                 <div className="flex items-center gap-2 bg-gray-50 px-4 py-2 rounded-full cursor-pointer hover:bg-gray-100 transition-colors">
                   <MessageCircle className="w-4 h-4 text-gray-600" />
                   <span className="text-gray-600 font-medium">Chat</span>
@@ -339,30 +340,6 @@ export default function SyllabusResults() {
           <Calendar dates={allDates} />
         </div>
       </div>
-
-      {/* Delete Confirmation Dialog */}
-      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Delete Submission</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to delete this syllabus? This action cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button 
-              variant="destructive" 
-              onClick={handleDelete} 
-              disabled={isDeleting}
-            >
-              {isDeleting ? "Deleting..." : "Delete"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

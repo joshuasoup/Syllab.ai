@@ -267,5 +267,107 @@ export const deleteSyllabus = async (req: AuthenticatedRequest, res: Response) =
   }
 };
 
+// Update syllabus
+export const updateSyllabus = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    console.log('[updateSyllabus] Request received:', {
+      syllabusId: req.params.id,
+      userId: req.user.id,
+      body: req.body,
+      headers: req.headers
+    });
+
+    if (!req.body) {
+      console.error('[updateSyllabus] No request body received');
+      return res.status(400).json({ error: 'Request body is required' });
+    }
+
+    if (typeof req.body.title !== 'string') {
+      console.error('[updateSyllabus] Invalid title in request body:', req.body);
+      return res.status(400).json({ error: 'Title must be a string' });
+    }
+
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) {
+      console.error('[updateSyllabus] No authorization token found');
+      return res.status(401).json({ error: 'Authentication token required' });
+    }
+
+    // Create a new Supabase client with the user's token
+    const userSupabase = createClient(
+      process.env.SUPABASE_URL!,
+      process.env.SUPABASE_ANON_KEY!,
+      {
+        global: {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      }
+    );
+
+    // First check if the syllabus exists and belongs to the user
+    const { data: existingSyllabus, error: fetchError } = await userSupabase
+      .from('syllabi')
+      .select('*')
+      .eq('id', req.params.id)
+      .eq('user_id', req.user.id)
+      .single();
+
+    if (fetchError) {
+      console.error('[updateSyllabus] Error fetching syllabus:', fetchError);
+      return res.status(404).json({ error: 'Syllabus not found' });
+    }
+
+    if (!existingSyllabus) {
+      console.error('[updateSyllabus] Syllabus not found');
+      return res.status(404).json({ error: 'Syllabus not found' });
+    }
+
+    // Update syllabus record using user's token
+    const { data: syllabus, error: updateError } = await userSupabase
+      .from('syllabi')
+      .update({
+        title: req.body.title.trim(),
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', req.params.id)
+      .eq('user_id', req.user.id)
+      .select()
+      .single();
+
+    if (updateError) {
+      console.error('[updateSyllabus] Database error:', updateError);
+      return res.status(500).json({ error: `Failed to update syllabus: ${updateError.message}` });
+    }
+
+    if (!syllabus) {
+      console.error('[updateSyllabus] Syllabus not found after update');
+      return res.status(404).json({ error: 'Syllabus not found' });
+    }
+
+    console.log('[updateSyllabus] Syllabus updated successfully:', {
+      id: syllabus.id,
+      title: syllabus.title
+    });
+
+    // Transform the data to match the client's expected structure
+    const transformedData = {
+      ...syllabus,
+      file: syllabus.file_url ? {
+        url: syllabus.file_url
+      } : null,
+      highlights: syllabus.highlights || {},
+      processed: syllabus.processed || false,
+      icsContent: syllabus.ics_content || null
+    };
+
+    res.json(transformedData);
+  } catch (error: any) {
+    console.error('[updateSyllabus] Error:', error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
 
 

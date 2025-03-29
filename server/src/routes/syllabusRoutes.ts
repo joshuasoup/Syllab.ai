@@ -40,6 +40,10 @@ router.delete('/:id', auth,
   syllabusController.deleteSyllabus as express.RequestHandler
 );
 
+router.patch('/:id', auth, 
+  syllabusController.updateSyllabus as express.RequestHandler
+);
+
 export default router;
 
 
