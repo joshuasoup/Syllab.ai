@@ -166,22 +166,6 @@ export const api = {
       fetchApi<{ results: any }>(`/syllabi/${id}/results`),
     process: async (id: string): Promise<Syllabus> =>
       fetchApi<Syllabus>(`/syllabi/${id}/process`, { method: 'POST' }),
-    update: (id: string, data: Partial<Syllabus>) => {
-      const requestBody = { title: data.title };
-      console.log('[API] Updating syllabus:', {
-        id,
-        data: requestBody,
-        method: 'PATCH'
-      });
-      return fetchApi<Syllabus>(`/syllabi/${id}`, {
-        method: 'PATCH',
-        body: JSON.stringify(requestBody),
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-      });
-    },
   },
   chat: {
     sendMessage: (syllabusId: string, message: string) =>

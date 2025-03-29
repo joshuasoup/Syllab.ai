@@ -10,7 +10,6 @@ interface UseFindOneOptions {
   enabled?: boolean;
   maxRetries?: number;
   retryDelay?: number;
-  dependencies?: any[];
 }
 
 export function useFindOne<T>(
@@ -23,8 +22,8 @@ export function useFindOne<T>(
   const [retryCount, setRetryCount] = useState(0);
 
   useEffect(() => {
-    // Don't fetch if disabled
-    if (options.enabled === false) {
+    // Don't fetch if disabled or if we already have data
+    if (options.enabled === false || data !== null) {
       return;
     }
 
@@ -66,7 +65,7 @@ export function useFindOne<T>(
         clearTimeout(timeoutId);
       }
     };
-  }, [fetchFn, options.enabled, retryCount, ...(options.dependencies || [])]);
+  }, [fetchFn, options.enabled, retryCount, data]);
 
   return [{ data, error, fetching }];
 } 
