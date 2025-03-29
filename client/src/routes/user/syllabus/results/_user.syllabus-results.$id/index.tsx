@@ -29,6 +29,9 @@ import {
   Star,
   Clock,
   ChevronRight,
+  Share2,
+  ExternalLink,
+  Twitter,
 } from 'lucide-react';
 import type { AuthOutletContext } from '@/routes/_user';
 import { useAction } from '@/hooks/useAction';
@@ -42,6 +45,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { DeleteSyllabusButton } from "@/components/features/syllabus/DeleteSyllabusButton";
+import { Badge } from "@/components/ui/badge";
 
 export default function SyllabusResults() {
   const { id } = useParams();
@@ -399,6 +403,59 @@ export default function SyllabusResults() {
           </h2>
           <Calendar dates={allDates} />
         </div>
+      </div>
+
+      <div className="flex flex-col gap-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-bold">{syllabus.title}</h1>
+            <Badge variant="outline" className="text-xs">
+              {syllabus.highlights?.course_info?.code || 'No course code'}
+            </Badge>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                const url = window.location.href;
+                navigator.clipboard.writeText(url);
+                toast.success("Link copied to clipboard");
+              }}
+            >
+              <Share2 className="h-4 w-4 mr-2" />
+              Share
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                const url = window.location.href;
+                window.open(url, '_blank');
+              }}
+            >
+              <ExternalLink className="h-4 w-4 mr-2" />
+              Open in New Tab
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                const url = window.location.href;
+                window.open(`https://twitter.com/intent/tweet?url=${encodeURIComponent(url)}&text=${encodeURIComponent(`Check out my syllabus for ${syllabus.highlights?.course_info?.code || 'No course code'}: ${syllabus.title}`)}`, '_blank');
+              }}
+            >
+              <Twitter className="h-4 w-4 mr-2" />
+              Share on Twitter
+            </Button>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <span>Last updated: {new Date(syllabus.updatedAt).toLocaleDateString()}</span>
+          <span>•</span>
+          <span>Created: {new Date(syllabus.createdAt).toLocaleDateString()}</span>
+        </div>
+      </div>
     </div>
   );
 }
