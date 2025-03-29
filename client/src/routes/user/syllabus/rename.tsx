@@ -7,6 +7,7 @@ import { FileText, Loader2, Edit } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "@/services/api";
 import type { Syllabus } from "@/types/syllabus";
+import { eventEmitter } from "@/utils/eventEmitter";
 
 export default function RenameSyllabus() {
   const { id } = useParams();
@@ -52,8 +53,22 @@ export default function RenameSyllabus() {
     try {
       const result = await api.syllabus.update(id!, { title: trimmedTitle });
       console.log("Update successful:", result);
-      toast.success("Syllabus renamed successfully");
-      navigate(`/user/syllabus-results/${id}`);
+      if (result && result.title) {
+        // Emit the syllabusUpdated event with the updated syllabus
+        eventEmitter.emit('syllabusUpdated', {
+          ...result,
+          id: id!, // Ensure ID is included
+          title: trimmedTitle // Ensure we use the trimmed title
+        });
+        toast.success("Syllabus renamed successfully");
+        
+        // Add a small delay before navigation to ensure the event is processed
+        setTimeout(() => {
+          navigate(`/user/syllabus-results/${id}`);
+        }, 100);
+      } else {
+        throw new Error("Invalid response from server");
+      }
     } catch (error: any) {
       console.error("Error renaming syllabus:", {
         error,
@@ -61,7 +76,15 @@ export default function RenameSyllabus() {
         id,
         errorMessage: error.message
       });
-      toast.error(`Error renaming syllabus: ${error.message || "Unknown error"}`);
+      if (error.message?.includes('401')) {
+        toast.error("Your session has expired. Please sign in again.");
+        navigate('/auth/sign-in');
+      } else if (error.message?.includes('404')) {
+        toast.error("Syllabus not found. It may have been deleted.");
+        navigate('/user');
+      } else {
+        toast.error(error.message || "Failed to rename syllabus");
+      }
     } finally {
       setIsSubmitting(false);
     }

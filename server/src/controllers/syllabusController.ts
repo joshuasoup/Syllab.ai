@@ -328,8 +328,7 @@ export const updateSyllabus = async (req: AuthenticatedRequest, res: Response) =
     const { data: syllabus, error: updateError } = await userSupabase
       .from('syllabi')
       .update({
-        title: req.body.title.trim(),
-        updated_at: new Date().toISOString()
+        title: req.body.title.trim()
       })
       .eq('id', req.params.id)
       .eq('user_id', req.user.id)

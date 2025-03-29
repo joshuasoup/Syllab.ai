@@ -178,6 +178,7 @@ export const api = {
         body: JSON.stringify(requestBody),
         headers: {
           'Content-Type': 'application/json',
+          'Accept': 'application/json'
         },
       });
     },

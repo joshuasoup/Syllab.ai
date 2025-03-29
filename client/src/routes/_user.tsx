@@ -12,6 +12,7 @@ import { useState, useEffect } from "react";
 import { api } from "@/services/api";
 import { useFindMany } from "@/hooks/useFindMany";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { toast } from "sonner";
 
 import {
   Link,
@@ -134,31 +135,58 @@ const SideBar = ({
 }) => {
   const location = useLocation();
   const [syllabusesOpen, setSyllabusesOpen] = useState(true);
+  const [syllabuses, setSyllabuses] = useState<Syllabus[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const [{ data: syllabuses, fetching, error }, fetchSyllabuses] = useFindMany(api.syllabus.getAll, {
-    maxRetries: 3,
-    retryDelay: 2000
-  });
+  const fetchSyllabuses = async () => {
+    try {
+      setIsLoading(true);
+      const data = await api.syllabus.getAll();
+      setSyllabuses(data || []);
+    } catch (error) {
+      console.error("Error fetching syllabuses:", error);
+      toast.error("Failed to load syllabuses");
+      setSyllabuses([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-  // Listen for syllabus updates
   useEffect(() => {
-    const handleSyllabusAdded = () => {
-      fetchSyllabuses(); // Re-fetch syllabuses when a new one is added
+    fetchSyllabuses();
+
+    // Listen for syllabusAdded event
+    const handleSyllabusAdded = (newSyllabus: Syllabus) => {
+      if (newSyllabus && newSyllabus.id) {
+        setSyllabuses(prev => [newSyllabus, ...prev]);
+      }
     };
 
-    const handleSyllabusDeleted = () => {
-      fetchSyllabuses(); // Re-fetch syllabuses when one is deleted
+    // Listen for syllabusDeleted event
+    const handleSyllabusDeleted = (deletedId: string) => {
+      setSyllabuses(prev => prev.filter(s => s && s.id !== deletedId));
     };
 
-    eventEmitter.on("syllabusAdded", handleSyllabusAdded);
-    eventEmitter.on("syllabusDeleted", handleSyllabusDeleted);
+    // Listen for syllabusUpdated event
+    const handleSyllabusUpdated = (updatedSyllabus: Syllabus) => {
+      console.log('Received syllabusUpdated event:', updatedSyllabus);
+      if (updatedSyllabus && updatedSyllabus.id) {
+        // Fetch fresh data instead of trying to update in place
+        fetchSyllabuses();
+      }
+    };
+
+    eventEmitter.on('syllabusAdded', handleSyllabusAdded);
+    eventEmitter.on('syllabusDeleted', handleSyllabusDeleted);
+    eventEmitter.on('syllabusUpdated', handleSyllabusUpdated);
 
     // Cleanup listeners on unmount
     return () => {
-      eventEmitter.off("syllabusAdded", handleSyllabusAdded);
-      eventEmitter.off("syllabusDeleted", handleSyllabusDeleted);
+      eventEmitter.off('syllabusAdded', handleSyllabusAdded);
+      eventEmitter.off('syllabusDeleted', handleSyllabusDeleted);
+      eventEmitter.off('syllabusUpdated', handleSyllabusUpdated);
     };
-  }, [fetchSyllabuses]);
+  }, []);
 
   return (
     <div className="flex flex-col flex-grow bg-background border-r h-full text-sm">
@@ -225,43 +253,37 @@ const SideBar = ({
               {syllabusesOpen && !isCollapsed && (
                 <ScrollArea className="h-[calc(100vh-16rem)]">
                   <div className="ml-4 space-y-0.5 mt-0.5">
-                    {fetching && (
+                    {isLoading ? (
                       <div className="text-xs text-muted-foreground px-2 py-0.5">
-                        Loading...
+                        Loading syllabuses...
                       </div>
-                    )}
-
-                    {error && (
-                      <div className="text-xs text-red-500 px-2 py-0.5">
-                        Error loading syllabuses
-                      </div>
-                    )}
-
-                    {syllabuses && syllabuses.length === 0 && !fetching && (
+                    ) : syllabuses.length === 0 ? (
                       <div className="text-xs text-muted-foreground px-2 py-0.5">
                         No syllabuses uploaded yet
                       </div>
+                    ) : (
+                      syllabuses.map((syllabus: Syllabus) => {
+                        console.log('Rendering syllabus:', syllabus);
+                        return syllabus && syllabus.id ? (
+                          <Link
+                            key={syllabus.id}
+                            to={`/user/syllabus-results/${syllabus.id}`}
+                            className={`flex items-center px-3 py-1.5 text-xs font-normal rounded-sm transition-colors text-muted-foreground
+                            ${
+                              location.pathname ===
+                              `/user/syllabus-results/${syllabus.id}`
+                                ? 'bg-accent/50 text-accent-foreground'
+                                : 'hover:bg-accent/50 hover:text-accent-foreground'
+                            }`}
+                          >
+                            <FileText className="mr-1.5 h-4 w-4 text-gray-500 flex-shrink-0" />
+                            <span className="truncate whitespace-nowrap">
+                              {syllabus.title}
+                            </span>
+                          </Link>
+                        ) : null;
+                      })
                     )}
-
-                    {syllabuses &&
-                      syllabuses.map((syllabus: Syllabus) => (
-                        <Link
-                          key={syllabus.id}
-                          to={`/user/syllabus-results/${syllabus.id}`}
-                          className={`flex items-center px-3 py-1.5 text-xs font-normal rounded-sm transition-colors text-muted-foreground
-                          ${
-                            location.pathname ===
-                            `/user/syllabus-results/${syllabus.id}`
-                              ? 'bg-accent/50 text-accent-foreground'
-                              : 'hover:bg-accent/50 hover:text-accent-foreground'
-                          }`}
-                        >
-                          <FileText className="mr-1.5 h-4 w-4 text-gray-500 flex-shrink-0" />
-                          <span className="truncate whitespace-nowrap">
-                            {syllabus.title}
-                          </span>
-                        </Link>
-                      ))}
                   </div>
                 </ScrollArea>
               )}
