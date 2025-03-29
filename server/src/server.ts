@@ -26,17 +26,17 @@ app.use(cors({
   credentials: true
 }));
 
-// Body parsers
+// Routes that handle file uploads should come before body parsers
+app.use('/api/syllabi', syllabusRoutes);
+
+// Body parsers for other routes
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
-// Routes
-app.use('/api/syllabi', syllabusRoutes);
-app.use('/api', authRoutes);
-app.use('/api', userRoutes);
-
 // Other routes
 app.use('/api', chatRoutes);
+app.use('/api', authRoutes);
+app.use('/api', userRoutes);
 
 // Error handling
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {

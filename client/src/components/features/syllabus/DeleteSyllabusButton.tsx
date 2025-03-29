@@ -13,22 +13,17 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
-import { eventEmitter } from "@/utils/eventEmitter";
 
 interface DeleteSyllabusButtonProps {
   syllabusId: string;
   variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link";
   className?: string;
-  onDelete?: () => void;
-  redirectTo?: string;
 }
 
 export const DeleteSyllabusButton: React.FC<DeleteSyllabusButtonProps> = ({ 
   syllabusId, 
   variant = "destructive",
-  className,
-  onDelete,
-  redirectTo = "/user/syllabus-upload"
+  className
 }) => {
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
@@ -39,31 +34,12 @@ export const DeleteSyllabusButton: React.FC<DeleteSyllabusButtonProps> = ({
     try {
       await deleteSyllabus(syllabusId);
       toast.success("Syllabus deleted successfully");
-      // Emit the syllabusDeleted event
-      eventEmitter.emit('syllabusDeleted', syllabusId);
-      // Call the onDelete callback if provided
-      onDelete?.();
-      // Close the dialog first
-      setOpen(false);
-      // Then navigate after a short delay to ensure state is cleaned up
-      setTimeout(() => {
-        navigate(redirectTo);
-      }, 100);
-    } catch (error: any) {
+      navigate("/user/syllabus-upload");
+    } catch (error) {
+      toast.error("Failed to delete syllabus");
       console.error("Delete syllabus error:", error);
-      // Show a more specific error message based on the error type
-      if (error.message?.includes('Authentication failed')) {
-        toast.error("Your session has expired. Please sign in again.");
-        navigate('/auth/sign-in');
-      } else if (error.message?.includes('not found')) {
-        toast.error("Syllabus not found. It may have been already deleted.");
-        setOpen(false);
-        setTimeout(() => {
-          navigate(redirectTo);
-        }, 100);
-      } else {
-        toast.error(error.message || "Failed to delete syllabus");
-      }
+    } finally {
+      setOpen(false);
     }
   };
 
