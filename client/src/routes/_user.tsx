@@ -11,6 +11,8 @@ import CommandKBadge from "@/components/shared/CommandKBadge";
 import { useState, useEffect } from "react";
 import { api } from "@/services/api";
 import { useFindMany } from "@/hooks/useFindMany";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { toast } from "sonner";
 
 import {
   Link,
@@ -133,25 +135,58 @@ const SideBar = ({
 }) => {
   const location = useLocation();
   const [syllabusesOpen, setSyllabusesOpen] = useState(true);
+  const [syllabuses, setSyllabuses] = useState<Syllabus[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const [{ data: syllabuses, fetching, error }, fetchSyllabuses] = useFindMany(api.syllabus.getAll, {
-    maxRetries: 3,
-    retryDelay: 2000
-  });
+  const fetchSyllabuses = async () => {
+    try {
+      setIsLoading(true);
+      const data = await api.syllabus.getAll();
+      setSyllabuses(data || []);
+    } catch (error) {
+      console.error("Error fetching syllabuses:", error);
+      toast.error("Failed to load syllabuses");
+      setSyllabuses([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-  // Listen for syllabus updates
   useEffect(() => {
-    const handleSyllabusAdded = () => {
-      fetchSyllabuses(); // Re-fetch syllabuses when a new one is added
+    fetchSyllabuses();
+
+    // Listen for syllabusAdded event
+    const handleSyllabusAdded = (newSyllabus: Syllabus) => {
+      if (newSyllabus && newSyllabus.id) {
+        setSyllabuses(prev => [newSyllabus, ...prev]);
+      }
     };
 
-    eventEmitter.on("syllabusAdded", handleSyllabusAdded);
+    // Listen for syllabusDeleted event
+    const handleSyllabusDeleted = (deletedId: string) => {
+      setSyllabuses(prev => prev.filter(s => s && s.id !== deletedId));
+    };
 
-    // Cleanup listener on unmount
+    // Listen for syllabusUpdated event
+    const handleSyllabusUpdated = (updatedSyllabus: Syllabus) => {
+      console.log('Received syllabusUpdated event:', updatedSyllabus);
+      if (updatedSyllabus && updatedSyllabus.id) {
+        // Fetch fresh data instead of trying to update in place
+        fetchSyllabuses();
+      }
+    };
+
+    eventEmitter.on('syllabusAdded', handleSyllabusAdded);
+    eventEmitter.on('syllabusDeleted', handleSyllabusDeleted);
+    eventEmitter.on('syllabusUpdated', handleSyllabusUpdated);
+
+    // Cleanup listeners on unmount
     return () => {
-      eventEmitter.off("syllabusAdded", handleSyllabusAdded);
+      eventEmitter.off('syllabusAdded', handleSyllabusAdded);
+      eventEmitter.off('syllabusDeleted', handleSyllabusDeleted);
+      eventEmitter.off('syllabusUpdated', handleSyllabusUpdated);
     };
-  }, [fetchSyllabuses]);
+  }, []);
 
   return (
     <div className="flex flex-col flex-grow bg-background border-r h-full text-sm">
@@ -178,113 +213,111 @@ const SideBar = ({
           </span>
         </Link>
       </div>
-      <nav className="flex-1 px-2 py-2">
-        <div className="space-y-1">
-          <button
-            onClick={() => setSyllabusesOpen(!syllabusesOpen)}
-            className="flex items-center justify-between w-full px-3 py-1.5 text-sm font-medium text-left rounded-sm transition-colors hover:bg-accent hover:text-accent-foreground"
-          >
-            <div className="flex items-center">
-              <Folder
-                className={`${isCollapsed ? 'w-4 h-4' : 'w-4 h-4 mr-2'}`}
-              />
+      <div className="flex flex-col h-full">
+        <nav className="flex-1 px-2 py-2 overflow-hidden">
+          <div className="space-y-1 h-full">
+            <button
+              onClick={() => setSyllabusesOpen(!syllabusesOpen)}
+              className="flex items-center justify-between w-full px-3 py-1.5 text-sm font-medium text-left rounded-sm transition-colors hover:bg-accent hover:text-accent-foreground"
+            >
+              <div className="flex items-center">
+                <Folder
+                  className={`${isCollapsed ? 'w-4 h-4' : 'w-4 h-4 mr-2'}`}
+                />
+                <span
+                  className={`whitespace-nowrap transition-all duration-300 ${
+                    isCollapsed ? 'w-0 opacity-0' : 'w-auto opacity-100'
+                  }`}
+                >
+                  My Syllabuses
+                </span>
+              </div>
               <span
-                className={`whitespace-nowrap transition-all duration-300 ${
+                className={`transition-all duration-300 ${
                   isCollapsed ? 'w-0 opacity-0' : 'w-auto opacity-100'
                 }`}
               >
-                My Syllabuses
+                {syllabusesOpen ? (
+                  <ChevronDown className="h-3 w-3" />
+                ) : (
+                  <ChevronRight className="h-3 w-3" />
+                )}
               </span>
-            </div>
-            <span
+            </button>
+
+            <div
               className={`transition-all duration-300 ${
-                isCollapsed ? 'w-0 opacity-0' : 'w-auto opacity-100'
+                isCollapsed ? 'h-0 opacity-0' : 'h-auto opacity-100'
               }`}
             >
-              {syllabusesOpen ? (
-                <ChevronDown className="h-3 w-3" />
-              ) : (
-                <ChevronRight className="h-3 w-3" />
+              {syllabusesOpen && !isCollapsed && (
+                <ScrollArea className="h-[calc(100vh-16rem)]">
+                  <div className="ml-4 space-y-0.5 mt-0.5">
+                    {isLoading ? (
+                      <div className="text-xs text-muted-foreground px-2 py-0.5">
+                        Loading syllabuses...
+                      </div>
+                    ) : syllabuses.length === 0 ? (
+                      <div className="text-xs text-muted-foreground px-2 py-0.5">
+                        No syllabuses uploaded yet
+                      </div>
+                    ) : (
+                      syllabuses.map((syllabus: Syllabus) => {
+                        console.log('Rendering syllabus:', syllabus);
+                        return syllabus && syllabus.id ? (
+                          <Link
+                            key={syllabus.id}
+                            to={`/user/syllabus-results/${syllabus.id}`}
+                            className={`flex items-center px-3 py-1.5 text-xs font-normal rounded-sm transition-colors text-muted-foreground
+                            ${
+                              location.pathname ===
+                              `/user/syllabus-results/${syllabus.id}`
+                                ? 'bg-accent/50 text-accent-foreground'
+                                : 'hover:bg-accent/50 hover:text-accent-foreground'
+                            }`}
+                          >
+                            <FileText className="mr-1.5 h-4 w-4 text-gray-500 flex-shrink-0" />
+                            <span className="truncate whitespace-nowrap">
+                              {syllabus.title}
+                            </span>
+                          </Link>
+                        ) : null;
+                      })
+                    )}
+                  </div>
+                </ScrollArea>
               )}
-            </span>
-          </button>
-
+            </div>
+          </div>
+        </nav>
+        <div className="flex-shrink-0 px-3 py-3 border-t">
           <div
             className={`transition-all duration-300 ${
               isCollapsed ? 'h-0 opacity-0' : 'h-auto opacity-100'
             }`}
           >
-            {syllabusesOpen && !isCollapsed && (
-              <div className="ml-4 space-y-0.5 mt-0.5">
-                {fetching && (
-                  <div className="text-xs text-muted-foreground px-2 py-0.5">
-                    Loading...
-                  </div>
-                )}
-
-                {error && (
-                  <div className="text-xs text-red-500 px-2 py-0.5">
-                    Error loading syllabuses
-                  </div>
-                )}
-
-                {syllabuses && syllabuses.length === 0 && !fetching && (
-                  <div className="text-xs text-muted-foreground px-2 py-0.5">
-                    No syllabuses uploaded yet
-                  </div>
-                )}
-
-                {syllabuses &&
-                  syllabuses.map((syllabus: Syllabus) => (
-                    <Link
-                      key={syllabus.id}
-                      to={`/user/syllabus-results/${syllabus.id}`}
-                      className={`flex items-center px-3 py-1.5 text-xs font-normal rounded-sm transition-colors text-muted-foreground
-                      ${
-                        location.pathname ===
-                        `/user/syllabus-results/${syllabus.id}`
-                          ? 'bg-accent/50 text-accent-foreground'
-                          : 'hover:bg-accent/50 hover:text-accent-foreground'
-                      }`}
-                    >
-                      <FileText className="mr-1.5 h-4 w-4 text-gray-500 flex-shrink-0" />
-                      <span className="truncate whitespace-nowrap">
-                        {syllabus.title}
-                      </span>
-                    </Link>
-                  ))}
-              </div>
-            )}
+            <UserMenu user={user} />
           </div>
-        </div>
-      </nav>
-      <div className="mt-auto px-3 py-3">
-        <div
-          className={`transition-all duration-300 ${
-            isCollapsed ? 'h-0 opacity-0' : 'h-auto opacity-100'
-          }`}
-        >
-          <UserMenu user={user} />
-        </div>
-        <Link
-          to="/user/syllabus-upload"
-          className={`flex items-center w-full px-3 py-2 mb-3 mt-4 text-sm font-medium rounded-sm bg-blue-600 hover:bg-blue-700 text-white transition-colors ${
-            isCollapsed ? 'justify-center' : ''
-          }`}
-        >
-          <FileText
-            className={`${
-              isCollapsed ? 'w-4 h-4' : 'w-3 h-3 mr-2 flex-shrink-0'
-            }`}
-          />
-          <span
-            className={`whitespace-nowrap transition-all duration-300 ${
-              isCollapsed ? 'w-0 opacity-0' : 'w-auto opacity-100'
+          <Link
+            to="/user/syllabus-upload"
+            className={`flex items-center w-full px-3 py-2 mb-3 mt-4 text-sm font-medium rounded-sm bg-blue-600 hover:bg-blue-700 text-white transition-colors ${
+              isCollapsed ? 'justify-center' : ''
             }`}
           >
-            Upload New Syllabus
-          </span>
-        </Link>
+            <FileText
+              className={`${
+                isCollapsed ? 'w-4 h-4' : 'w-3 h-3 mr-2 flex-shrink-0'
+              }`}
+            />
+            <span
+              className={`whitespace-nowrap transition-all duration-300 ${
+                isCollapsed ? 'w-0 opacity-0' : 'w-auto opacity-100'
+              }`}
+            >
+              Upload New Syllabus
+            </span>
+          </Link>
+        </div>
       </div>
     </div>
   );
