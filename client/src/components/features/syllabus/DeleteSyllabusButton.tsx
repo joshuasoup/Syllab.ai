@@ -21,6 +21,7 @@ interface DeleteSyllabusButtonProps {
   className?: string;
   onDelete?: () => void;
   redirectTo?: string;
+  children?: React.ReactNode;
 }
 
 export const DeleteSyllabusButton: React.FC<DeleteSyllabusButtonProps> = ({ 
@@ -28,7 +29,8 @@ export const DeleteSyllabusButton: React.FC<DeleteSyllabusButtonProps> = ({
   variant = "destructive",
   className,
   onDelete,
-  redirectTo = "/user/syllabus-upload"
+  redirectTo = "/user/syllabus-upload",
+  children
 }) => {
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
@@ -75,8 +77,12 @@ export const DeleteSyllabusButton: React.FC<DeleteSyllabusButtonProps> = ({
         disabled={fetching}
         className={className}
       >
-        <Trash2 className="h-4 w-4 mr-2" />
-        Delete Submission
+        {children || (
+          <>
+            <Trash2 className="h-4 w-4 mr-2" />
+            Delete Submission
+          </>
+        )}
       </Button>
 
       <Dialog open={open} onOpenChange={setOpen}>

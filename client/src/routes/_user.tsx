@@ -6,30 +6,43 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Toaster } from "@/components/ui/sonner";
-import { ChevronDown, ChevronRight, FileText, LogOut, Menu, User as UserIcon, Folder, ChevronLeft } from "lucide-react";
+import { ChevronDown, ChevronRight, FileText, LogOut, Menu, User as UserIcon, Folder as FolderIcon, ChevronLeft, MoreVertical, FolderPlus, GripVertical, Check, X, Edit, Trash2, FolderOpen } from "lucide-react";
 import CommandKBadge from "@/components/shared/CommandKBadge";
 import { useState, useEffect } from "react";
 import { api } from "@/services/api";
 import { useFindMany } from "@/hooks/useFindMany";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
-
-import {
-  Link,
-  Outlet,
-  redirect,
-  useLocation,
-  useOutletContext,
-  useNavigate,
-  useLoaderData,
-  LoaderFunctionArgs,
-} from 'react-router-dom';
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Link, Outlet, redirect, useLocation, useOutletContext, useNavigate, useLoaderData, LoaderFunctionArgs } from 'react-router-dom';
 import type { User } from '@/types/user';
 import type { Syllabus } from '@/types/syllabus';
 import { getSession } from '@/lib/supabase';
-// Import logo as URL using Vite's special import syntax
 import logoUrl from '@images/syllabai-logo.png';
 import { eventEmitter } from "@/utils/eventEmitter";
+import type { Folder } from '@/types/folder';
+import { DeleteSyllabusButton } from "@/components/features/syllabus/DeleteSyllabusButton";
+import {
+  DndContext,
+  DragOverlay,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+  DragOverEvent,
+  DragStartEvent,
+  useDroppable,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { useSortable } from "@dnd-kit/sortable";
 
 interface RootOutletContext {
   user?: User;
@@ -126,6 +139,158 @@ const UserMenu = ({ user }: { user: User }) => {
   );
 };
 
+interface DraggableSyllabusProps {
+  syllabus: Syllabus;
+  folderId?: string;
+}
+
+const DraggableSyllabus: React.FC<DraggableSyllabusProps> = ({ syllabus, folderId }) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({
+    id: syllabus.id,
+    data: {
+      type: 'SYLLABUS',
+      syllabus,
+      folderId,
+    },
+  });
+
+  const style = {
+    transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
+    transition,
+    opacity: isDragging ? 0.5 : undefined,
+  };
+
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      {...attributes}
+      {...listeners}
+      className={`group flex items-center px-2 py-1 text-xs font-normal rounded-sm transition-colors text-muted-foreground cursor-move
+        ${location.pathname === `/user/syllabus-results/${syllabus.id}` ? 'bg-accent/50 text-accent-foreground' : 'hover:bg-accent/50 hover:text-accent-foreground'}`}
+    >
+      <FileText className="h-2.5 w-2.5 mr-1 text-gray-500 flex-shrink-0" />
+      <span className="truncate whitespace-nowrap flex-grow text-[11px] max-w-[120px]">{syllabus.title}</span>
+      <div className="flex items-center gap-1 ml-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-4 w-4 p-0 hover:bg-transparent"
+          onClick={() => navigate(`/user/syllabus/rename/${syllabus.id}`)}
+        >
+          <Edit className="h-2.5 w-2.5 text-gray-300" />
+        </Button>
+        <DeleteSyllabusButton
+          syllabusId={syllabus.id}
+          variant="ghost"
+          className="h-4 w-4 p-0 hover:bg-transparent"
+          onDelete={() => {
+            eventEmitter.emit('syllabusDeleted', syllabus.id);
+          }}
+        >
+          <Trash2 className="h-2.5 w-2.5 text-red-300" />
+        </DeleteSyllabusButton>
+      </div>
+    </div>
+  );
+};
+
+const FolderDropZone: React.FC<{
+  folder: Folder;
+  onDrop: (syllabusId: string) => void;
+  isOpen: boolean;
+  onToggle: () => void;
+}> = ({ folder, onDrop, isOpen, onToggle }) => {
+  const { setNodeRef, isOver } = useDroppable({
+    id: `folder-${folder.id}`,
+    data: {
+      type: 'FOLDER',
+      folder,
+      onDrop,
+    },
+  });
+
+  // Filter out any invalid syllabus IDs
+  const validSyllabusIds = folder.syllabuses.filter(id => id && typeof id === 'string');
+  const folderSyllabuses = validSyllabusIds
+    .map(syllabusId => syllabuses.find(s => s && s.id === syllabusId))
+    .filter((s): s is Syllabus => s !== undefined);
+
+  return (
+    <div>
+      <div
+        ref={setNodeRef}
+        className={`flex items-center gap-1 mb-1 p-1 rounded-sm transition-colors ${
+          isOver ? 'bg-accent/50' : ''
+        }`}
+      >
+        <FolderOpen 
+          className="h-4 w-4" 
+          style={{ 
+            color: folder.color,
+            stroke: folder.color,
+            fill: `${folder.color}20`
+          }} 
+        />
+        <span className="text-xs font-medium text-gray-700">{folder.name}</span>
+        <button 
+          onClick={onToggle}
+          className="ml-auto p-0.5 hover:bg-gray-100 rounded-sm transition-colors"
+        >
+          <ChevronDown className={`h-3 w-3 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+        </button>
+      </div>
+      {isOpen && (
+        <div className="pl-4 space-y-1">
+          <SortableContext
+            items={folderSyllabuses.map(s => s.id)}
+            strategy={verticalListSortingStrategy}
+          >
+            {folderSyllabuses.map((syllabus) => (
+              <DraggableSyllabus
+                key={syllabus.id}
+                syllabus={syllabus}
+                folderId={folder.id}
+              />
+            ))}
+          </SortableContext>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const RootDropZone: React.FC<{
+  onDrop: (syllabusId: string) => void;
+}> = ({ onDrop }) => {
+  const { setNodeRef, isOver } = useDroppable({
+    id: 'root',
+    data: {
+      type: 'ROOT',
+      onDrop,
+    },
+  });
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={`h-2 rounded-sm transition-colors ${
+        isOver ? 'bg-accent/50' : ''
+      }`}
+    />
+  );
+};
+
 const SideBar = ({
   user,
   isCollapsed,
@@ -136,7 +301,43 @@ const SideBar = ({
   const location = useLocation();
   const [syllabusesOpen, setSyllabusesOpen] = useState(true);
   const [syllabuses, setSyllabuses] = useState<Syllabus[]>([]);
+  const [folders, setFolders] = useState<Folder[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isCreatingFolder, setIsCreatingFolder] = useState(false);
+  const [newFolderName, setNewFolderName] = useState('');
+  const [selectedColor, setSelectedColor] = useState('#3b82f6');
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const [openFolders, setOpenFolders] = useState<Set<string>>(new Set());
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const colors = [
+    '#3b82f6', // blue
+    '#10b981', // green
+    '#f59e0b', // yellow
+    '#ef4444', // red
+    '#8b5cf6', // purple
+    '#ec4899', // pink
+    '#14b8a6', // teal
+    '#f97316', // orange
+  ];
+
+  const toggleFolder = (folderId: string) => {
+    setOpenFolders(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(folderId)) {
+        newSet.delete(folderId);
+      } else {
+        newSet.add(folderId);
+      }
+      return newSet;
+    });
+  };
 
   const fetchSyllabuses = async () => {
     try {
@@ -152,26 +353,39 @@ const SideBar = ({
     }
   };
 
+  const fetchFolders = async () => {
+    try {
+      const data = await api.folders.getAll();
+      setFolders(data || []);
+    } catch (error) {
+      console.error("Error fetching folders:", error);
+      toast.error("Failed to load folders");
+      setFolders([]);
+    }
+  };
+
   useEffect(() => {
     fetchSyllabuses();
+    fetchFolders();
 
-    // Listen for syllabusAdded event
     const handleSyllabusAdded = (newSyllabus: Syllabus) => {
       if (newSyllabus && newSyllabus.id) {
         setSyllabuses(prev => [newSyllabus, ...prev]);
       }
     };
 
-    // Listen for syllabusDeleted event
     const handleSyllabusDeleted = (deletedId: string) => {
+      console.log('Deleting syllabus:', deletedId);
       setSyllabuses(prev => prev.filter(s => s && s.id !== deletedId));
+      // Remove syllabus from all folders
+      setFolders(prev => prev.map(folder => ({
+        ...folder,
+        syllabuses: folder.syllabuses.filter(id => id !== deletedId)
+      })));
     };
 
-    // Listen for syllabusUpdated event
     const handleSyllabusUpdated = (updatedSyllabus: Syllabus) => {
-      console.log('Received syllabusUpdated event:', updatedSyllabus);
       if (updatedSyllabus && updatedSyllabus.id) {
-        // Fetch fresh data instead of trying to update in place
         fetchSyllabuses();
       }
     };
@@ -180,7 +394,6 @@ const SideBar = ({
     eventEmitter.on('syllabusDeleted', handleSyllabusDeleted);
     eventEmitter.on('syllabusUpdated', handleSyllabusUpdated);
 
-    // Cleanup listeners on unmount
     return () => {
       eventEmitter.off('syllabusAdded', handleSyllabusAdded);
       eventEmitter.off('syllabusDeleted', handleSyllabusDeleted);
@@ -188,12 +401,123 @@ const SideBar = ({
     };
   }, []);
 
+  const createFolder = async () => {
+    if (newFolderName.trim()) {
+      try {
+        const newFolder = await api.folders.create(newFolderName.trim(), selectedColor);
+        setFolders(prev => [...prev, newFolder]);
+        setIsCreatingFolder(false);
+        setNewFolderName('');
+        setSelectedColor('#3b82f6');
+      } catch (error) {
+        console.error("Error creating folder:", error);
+        toast.error("Failed to create folder");
+      }
+    }
+  };
+
+  const moveSyllabusToFolder = async (syllabusId: string, folderId: string) => {
+    try {
+      // Find the target folder
+      const targetFolder = folders.find(f => f.id === folderId);
+      if (!targetFolder) return;
+
+      // Find the source folder (if any)
+      const sourceFolder = folders.find(f => f.syllabuses.includes(syllabusId));
+      
+      // If the syllabus is already in this folder, don't do anything
+      if (targetFolder.syllabuses.includes(syllabusId)) {
+        return;
+      }
+
+      // Remove from source folder if it exists
+      if (sourceFolder) {
+        const updatedSourceFolder = await api.folders.update(sourceFolder.id, {
+          syllabuses: sourceFolder.syllabuses.filter(id => id !== syllabusId)
+        });
+        setFolders(prev => prev.map(f => 
+          f.id === sourceFolder.id ? updatedSourceFolder : f
+        ));
+      }
+
+      // Add to target folder
+      const updatedTargetFolder = await api.folders.update(folderId, {
+        syllabuses: [...targetFolder.syllabuses, syllabusId]
+      });
+
+      setFolders(prev => prev.map(f => 
+        f.id === folderId ? updatedTargetFolder : f
+      ));
+    } catch (error) {
+      console.error("Error moving syllabus to folder:", error);
+      toast.error("Failed to move syllabus to folder");
+    }
+  };
+
+  const moveSyllabusOutOfFolder = async (syllabusId: string, folderId: string) => {
+    try {
+      const folder = folders.find(f => f.id === folderId);
+      if (!folder) return;
+
+      const updatedFolder = await api.folders.update(folderId, {
+        syllabuses: folder.syllabuses.filter(id => id !== syllabusId)
+      });
+
+      setFolders(prev => prev.map(f => 
+        f.id === folderId ? updatedFolder : f
+      ));
+    } catch (error) {
+      console.error("Error moving syllabus out of folder:", error);
+      toast.error("Failed to move syllabus out of folder");
+    }
+  };
+
+  const deleteFolder = async (folderId: string) => {
+    try {
+      await api.folders.delete(folderId);
+      setFolders(prev => prev.filter(f => f.id !== folderId));
+    } catch (error) {
+      console.error("Error deleting folder:", error);
+      toast.error("Failed to delete folder");
+    }
+  };
+
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveId(event.active.id as string);
+  };
+
+  const handleDragOver = (event: DragOverEvent) => {
+    const { active, over } = event;
+    if (!over) return;
+
+    const activeData = active.data.current;
+    const overData = over.data.current;
+
+    if (!activeData || !overData) return;
+
+    // Handle moving between folders
+    if (activeData.type === 'SYLLABUS' && overData.type === 'FOLDER') {
+      if (activeData.folderId !== overData.folder.id) {
+        moveSyllabusToFolder(activeData.syllabus.id, overData.folder.id);
+      }
+    }
+
+    // Handle moving to root
+    if (activeData.type === 'SYLLABUS' && overData.type === 'ROOT' && activeData.folderId) {
+      moveSyllabusOutOfFolder(activeData.syllabus.id, activeData.folderId);
+    }
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    setActiveId(null);
+  };
+
   return (
-    <div className="flex flex-col flex-grow bg-background border-r h-full text-sm">
-      <div className="px-3 py-4 border-b">
+    <div className="flex flex-col h-full bg-background border-r">
+      <div className="flex-shrink-0 p-3 border-b">
         <Link
           to="/user/syllabus-upload"
-          className={`flex items-center gap-2 ${
+          className={`flex items-center gap-2 mb-4 ${
             isCollapsed ? 'pointer-events-none' : ''
           }`}
         >
@@ -212,112 +536,146 @@ const SideBar = ({
             <span className="text-black">SyllabAI</span>
           </span>
         </Link>
-      </div>
-      <div className="flex flex-col h-full">
-        <nav className="flex-1 px-2 py-2 overflow-hidden">
-          <div className="space-y-1 h-full">
-            <button
-              onClick={() => setSyllabusesOpen(!syllabusesOpen)}
-              className="flex items-center justify-between w-full px-3 py-1.5 text-sm font-medium text-left rounded-sm transition-colors hover:bg-accent hover:text-accent-foreground"
-            >
-              <div className="flex items-center">
-                <Folder
-                  className={`${isCollapsed ? 'w-4 h-4' : 'w-4 h-4 mr-2'}`}
-                />
-                <span
-                  className={`whitespace-nowrap transition-all duration-300 ${
-                    isCollapsed ? 'w-0 opacity-0' : 'w-auto opacity-100'
-                  }`}
-                >
-                  My Syllabuses
-                </span>
-              </div>
-              <span
-                className={`transition-all duration-300 ${
-                  isCollapsed ? 'w-0 opacity-0' : 'w-auto opacity-100'
-                }`}
+        <div className="flex items-center justify-between mb-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-6 w-6 p-0"
+            onClick={() => setIsCreatingFolder(true)}
+          >
+            <FolderPlus className="h-4 w-4" />
+          </Button>
+        </div>
+        {isCreatingFolder && (
+          <div className="space-y-2 mb-2">
+            <div className="flex items-center gap-1">
+              <Input
+                value={newFolderName}
+                onChange={(e) => setNewFolderName(e.target.value)}
+                placeholder="New folder"
+                className="h-6 text-xs px-2 py-0 rounded-none border-0 border-b focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-b-2"
+                autoFocus
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    createFolder();
+                  }
+                }}
+              />
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 w-6 p-0"
+                onClick={createFolder}
               >
-                {syllabusesOpen ? (
-                  <ChevronDown className="h-3 w-3" />
-                ) : (
-                  <ChevronRight className="h-3 w-3" />
-                )}
-              </span>
-            </button>
-
-            <div
-              className={`transition-all duration-300 ${
-                isCollapsed ? 'h-0 opacity-0' : 'h-auto opacity-100'
-              }`}
-            >
-              {syllabusesOpen && !isCollapsed && (
-                <ScrollArea className="h-[calc(100vh-16rem)]">
-                  <div className="ml-4 space-y-0.5 mt-0.5">
-                    {isLoading ? (
-                      <div className="text-xs text-muted-foreground px-2 py-0.5">
-                        Loading syllabuses...
-                      </div>
-                    ) : syllabuses.length === 0 ? (
-                      <div className="text-xs text-muted-foreground px-2 py-0.5">
-                        No syllabuses uploaded yet
-                      </div>
-                    ) : (
-                      syllabuses.map((syllabus: Syllabus) => {
-                        console.log('Rendering syllabus:', syllabus);
-                        return syllabus && syllabus.id ? (
-                          <Link
-                            key={syllabus.id}
-                            to={`/user/syllabus-results/${syllabus.id}`}
-                            className={`flex items-center px-3 py-1.5 text-xs font-normal rounded-sm transition-colors text-muted-foreground
-                            ${
-                              location.pathname ===
-                              `/user/syllabus-results/${syllabus.id}`
-                                ? 'bg-accent/50 text-accent-foreground'
-                                : 'hover:bg-accent/50 hover:text-accent-foreground'
-                            }`}
-                          >
-                            <FileText className="mr-1.5 h-4 w-4 text-gray-500 flex-shrink-0" />
-                            <span className="truncate whitespace-nowrap">
-                              {syllabus.title}
-                            </span>
-                          </Link>
-                        ) : null;
-                      })
-                    )}
-                  </div>
-                </ScrollArea>
-              )}
+                <Check className="h-3 w-3" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 w-6 p-0"
+                onClick={() => {
+                  setIsCreatingFolder(false);
+                  setNewFolderName('');
+                  setSelectedColor('#3b82f6');
+                }}
+              >
+                <X className="h-3 w-3" />
+              </Button>
+            </div>
+            <div className="flex items-center gap-1">
+              {colors.map((color) => (
+                <button
+                  key={color}
+                  className={`w-4 h-4 rounded-full transition-transform hover:scale-110 ${
+                    selectedColor === color ? 'ring-2 ring-offset-2 ring-gray-200' : ''
+                  }`}
+                  style={{ backgroundColor: color }}
+                  onClick={() => setSelectedColor(color)}
+                />
+              ))}
             </div>
           </div>
-        </nav>
-        <div className="flex-shrink-0 px-3 py-3 border-t">
-          <div
-            className={`transition-all duration-300 ${
-              isCollapsed ? 'h-0 opacity-0' : 'h-auto opacity-100'
-            }`}
+        )}
+      </div>
+
+      <ScrollArea className="flex-1">
+        <div className="px-3">
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragStart={handleDragStart}
+            onDragOver={handleDragOver}
+            onDragEnd={handleDragEnd}
           >
-            <UserMenu user={user} />
-          </div>
-          <Link
-            to="/user/syllabus-upload"
-            className={`flex items-center w-full px-3 py-2 mb-3 mt-4 text-sm font-medium rounded-sm bg-blue-600 hover:bg-blue-700 text-white transition-colors ${
-              isCollapsed ? 'justify-center' : ''
-            }`}
-          >
-            <FileText
-              className={`${
-                isCollapsed ? 'w-4 h-4' : 'w-3 h-3 mr-2 flex-shrink-0'
-              }`}
-            />
-            <span
-              className={`whitespace-nowrap transition-all duration-300 ${
-                isCollapsed ? 'w-0 opacity-0' : 'w-auto opacity-100'
-              }`}
+            <SortableContext
+              items={folders.map(f => `folder-${f.id}`)}
+              strategy={verticalListSortingStrategy}
             >
-              Upload New Syllabus
-            </span>
-          </Link>
+              {folders.map((folder) => (
+                <div key={folder.id} className="mb-2">
+                  <FolderDropZone
+                    folder={folder}
+                    onDrop={(syllabusId) => {
+                      moveSyllabusToFolder(syllabusId, folder.id);
+                    }}
+                    isOpen={openFolders.has(folder.id)}
+                    onToggle={() => toggleFolder(folder.id)}
+                  />
+                </div>
+              ))}
+            </SortableContext>
+
+            <RootDropZone
+              onDrop={(syllabusId) => {
+                const sourceFolder = folders.find(f => f.syllabuses.includes(syllabusId));
+                if (sourceFolder) {
+                  moveSyllabusOutOfFolder(syllabusId, sourceFolder.id);
+                }
+              }}
+            />
+
+            <SortableContext
+              items={syllabuses
+                .filter(s => !folders.some(f => f.syllabuses.includes(s.id)))
+                .map(s => s.id)}
+              strategy={verticalListSortingStrategy}
+            >
+              <div className="space-y-1 mt-2">
+                {syllabuses
+                  .filter(s => !folders.some(f => f.syllabuses.includes(s.id)))
+                  .map((syllabus) => (
+                    <DraggableSyllabus
+                      key={syllabus.id}
+                      syllabus={syllabus}
+                    />
+                  ))}
+              </div>
+            </SortableContext>
+
+            <DragOverlay>
+              {activeId ? (
+                <div className="opacity-50">
+                  {/* Render a preview of the dragged item */}
+                </div>
+              ) : null}
+            </DragOverlay>
+          </DndContext>
         </div>
+      </ScrollArea>
+
+      <div className="flex-shrink-0 px-3 py-3 border-t">
+        <div className={`transition-all duration-300 ${isCollapsed ? 'h-0 opacity-0' : 'h-auto opacity-100'}`}>
+          <UserMenu user={user} />
+        </div>
+        <Link
+          to="/user/syllabus-upload"
+          className={`flex items-center w-full px-3 py-2 mb-3 mt-4 text-sm font-medium rounded-sm bg-blue-600 hover:bg-blue-700 text-white transition-colors ${isCollapsed ? 'justify-center' : ''}`}
+        >
+          <FileText className={`${isCollapsed ? 'w-4 h-4' : 'w-3 h-3 mr-2 flex-shrink-0'}`} />
+          <span className={`whitespace-nowrap transition-all duration-300 ${isCollapsed ? 'w-0 opacity-0' : 'w-auto opacity-100'}`}>
+            Upload New Syllabus
+          </span>
+        </Link>
       </div>
     </div>
   );

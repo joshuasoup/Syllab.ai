@@ -3,12 +3,13 @@ import express from 'express';
 import multer from 'multer';
 import { auth, preventCrossUserDataAccess } from '../middleware/auth';
 import * as syllabusController from '../controllers/syllabusController';
+import path from 'path';
 
 const router = express.Router();
 
 // Configure multer for temporary file storage
 const upload = multer({ 
-  dest: 'uploads/',
+  dest: path.join(__dirname, 'uploads'),
   limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
   fileFilter: (req, file, cb) => {
     if (file.mimetype === 'application/pdf') {
