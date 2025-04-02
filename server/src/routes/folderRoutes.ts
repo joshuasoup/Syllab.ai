@@ -1,10 +1,12 @@
 import { Router } from 'express';
-import { auth } from '../middleware/auth';
+import { auth, AuthenticatedRequest } from '../middleware/auth';
 import {
   createFolder,
   getFolders,
   updateFolder,
-  deleteFolder
+  deleteFolder,
+  reorderFolders,
+  addPositionColumn
 } from '../controllers/folderController';
 
 const router = Router();
@@ -25,5 +27,7 @@ router.post('/', createFolder);
 router.get('/', getFolders);
 router.put('/:id', updateFolder);
 router.delete('/:id', deleteFolder);
+router.post('/reorder', reorderFolders);
+router.post('/add-position-column', addPositionColumn);
 
 export default router; 

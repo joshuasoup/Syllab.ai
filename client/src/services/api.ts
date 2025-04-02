@@ -220,5 +220,12 @@ export const api = {
         method: 'DELETE',
       });
     },
+    reorder: (folderIds: string[]) => {
+      console.log('Reordering folders:', folderIds);
+      return fetchApi<Folder[]>('/folders/reorder', {
+        method: 'POST',
+        body: JSON.stringify({ folderIds }),
+      });
+    },
   },
 }; 

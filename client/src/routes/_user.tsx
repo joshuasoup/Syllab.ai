@@ -286,6 +286,28 @@ const FolderDropZone: React.FC<{
     },
   });
 
+  const {
+    attributes,
+    listeners,
+    setNodeRef: setSortableNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({
+    id: `folder-${folder.id}`,
+    data: {
+      type: 'FOLDER',
+      folder,
+    },
+  });
+
+  const style = {
+    transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
+    transition,
+    opacity: isDragging ? 0.5 : undefined,
+    zIndex: isDragging ? 1 : undefined,
+  };
+
   const folderSyllabuses = useMemo(() => {
     const validSyllabusIds = folder.syllabuses.filter(id => id && typeof id === 'string');
     return validSyllabusIds
@@ -293,16 +315,28 @@ const FolderDropZone: React.FC<{
       .filter((s): s is Syllabus => s !== undefined);
   }, [folder.syllabuses, syllabuses]);
 
+  // Use a callback ref to set both the droppable and sortable refs
+  const setRefs = useCallback(
+    (node: HTMLDivElement | null) => {
+      setNodeRef(node);
+      setSortableNodeRef(node);
+    },
+    [setNodeRef, setSortableNodeRef]
+  );
+
   return (
-    <div>
+    <div style={style}>
       <div
-        ref={setNodeRef}
+        ref={setRefs}
         className={`flex items-center gap-1 rounded-sm transition-colors cursor-pointer ${
           isOver ? 'bg-accent/80 ring-2 ring-accent ring-inset' : ''
         }`}
+        {...attributes}
+        {...listeners}
         onClick={onToggle}
       >
         <div className="flex items-center gap-1 flex-1">
+          <GripVertical className="h-3 w-3 text-gray-400 mr-0.5" />
           <FolderIcon 
             className="h-4 w-4" 
             style={{ 
@@ -360,6 +394,23 @@ const CustomDragOverlay = ({ activeId, activeData }: { activeId: string | null; 
       <div className="opacity-80 bg-white rounded-sm shadow-lg p-2 flex items-center gap-2">
         <FileText className="h-3 w-3 text-gray-500" />
         <span className="text-xs font-medium text-gray-700">{activeData.syllabus.title}</span>
+      </div>
+    );
+  }
+
+  if (activeData.type === 'FOLDER') {
+    return (
+      <div className="opacity-80 bg-white rounded-sm shadow-lg p-2 flex items-center gap-2">
+        <FolderIcon 
+          className="h-3 w-3" 
+          style={{ 
+            color: activeData.folder.color,
+            stroke: activeData.folder.color,
+            fill: `${activeData.folder.color}10`,
+            strokeWidth: 1.5
+          }} 
+        />
+        <span className="text-xs font-medium text-gray-700">{activeData.folder.name}</span>
       </div>
     );
   }
@@ -648,7 +699,42 @@ const SideBar = ({
 
     if (!over) return;
 
-    // Handle any other drag operations here...
+    // Handle folder reordering
+    if (activeData.type === 'FOLDER' && over.id !== active.id) {
+      // Find the indices of the active and over folders
+      const activeIndex = folders.findIndex(f => `folder-${f.id}` === active.id);
+      const overIndex = folders.findIndex(f => `folder-${f.id}` === over.id);
+      
+      if (activeIndex !== -1 && overIndex !== -1) {
+        // Create a new array with the reordered folders
+        const newFolders = [...folders];
+        const [movedFolder] = newFolders.splice(activeIndex, 1);
+        newFolders.splice(overIndex, 0, movedFolder);
+        
+        // Update the state with the reordered folders first for UI responsiveness
+        setFolders(newFolders);
+        
+        // Update folder order in the database
+        const saveFolderOrder = async () => {
+          try {
+            const updatedFolders = await api.folders.reorder(newFolders.map(f => f.id));
+            
+            // If we got back folders, update the state with server data
+            if (updatedFolders && updatedFolders.length > 0) {
+              setFolders(updatedFolders);
+            }
+          } catch (error) {
+            console.error("Error reordering folders:", error);
+            toast.error("Failed to save folder order, but your changes are still visible");
+            
+            // Don't revert the visual order since we already changed it for better UX
+            // Just log the error and show a toast notification
+          }
+        };
+        
+        saveFolderOrder();
+      }
+    }
   };
 
   return (
@@ -675,66 +761,6 @@ const SideBar = ({
             <span className="text-black">SyllabAI</span>
           </span>
         </Link>
-        <div className="flex items-center justify-between mb-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-6 w-6 p-0"
-            onClick={() => setIsCreatingFolder(true)}
-          >
-            <FolderPlus className="h-4 w-4" />
-          </Button>
-        </div>
-        {isCreatingFolder && (
-          <div className="space-y-2 mb-2">
-            <div className="flex items-center gap-1">
-              <Input
-                value={newFolderName}
-                onChange={(e) => setNewFolderName(e.target.value)}
-                placeholder="New folder"
-                className="h-6 text-xs px-2 py-0 rounded-none border-0 border-b focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-b-2"
-                autoFocus
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    createFolder();
-                  }
-                }}
-              />
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-6 w-6 p-0"
-                onClick={createFolder}
-              >
-                <Check className="h-3 w-3" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-6 w-6 p-0"
-                onClick={() => {
-                  setIsCreatingFolder(false);
-                  setNewFolderName('');
-                  setSelectedColor('#3b82f6');
-                }}
-              >
-                <X className="h-3 w-3" />
-              </Button>
-            </div>
-            <div className="flex items-center gap-1">
-              {colors.map((color) => (
-                <button
-                  key={color}
-                  className={`w-4 h-4 rounded-full transition-transform hover:scale-110 ${
-                    selectedColor === color ? 'ring-2 ring-offset-2 ring-gray-200' : ''
-                  }`}
-                  style={{ backgroundColor: color }}
-                  onClick={() => setSelectedColor(color)}
-                />
-              ))}
-            </div>
-          </div>
-        )}
       </div>
 
       <ScrollArea className="flex-1">
@@ -751,6 +777,70 @@ const SideBar = ({
               className="relative min-h-[calc(100vh-200px)]"
             >
               <div className="folders-section">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="group h-8 w-full flex items-center justify-between px-2 mb-3 hover:bg-blue-500/90 hover:text-white transition-all duration-300 text-xs rounded-md"
+                  onClick={() => setIsCreatingFolder(true)}
+                >
+                  <div className="flex items-center">
+                    <FolderPlus className="h-4 w-4 mr-1" />
+                    <span className="text-xs font-medium text-gray-500 group-hover:text-white transition-colors duration-300">Folders</span>
+                  </div>
+                  <span className="text-xs group-hover:text-white transition-colors duration-300">New Folder</span>
+                </Button>
+                
+                {isCreatingFolder && (
+                  <div className="space-y-2 mb-3">
+                    <div className="flex items-center gap-1">
+                      <Input
+                        value={newFolderName}
+                        onChange={(e) => setNewFolderName(e.target.value)}
+                        placeholder="New folder"
+                        className="h-6 text-xs px-2 py-0 rounded-none border-0 border-b focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-b-2"
+                        autoFocus
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            createFolder();
+                          }
+                        }}
+                      />
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 w-6 p-0"
+                        onClick={createFolder}
+                      >
+                        <Check className="h-3 w-3" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 w-6 p-0"
+                        onClick={() => {
+                          setIsCreatingFolder(false);
+                          setNewFolderName('');
+                          setSelectedColor('#3b82f6');
+                        }}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      {colors.map((color) => (
+                        <button
+                          key={color}
+                          className={`w-4 h-4 rounded-full transition-transform hover:scale-110 ${
+                            selectedColor === color ? 'ring-2 ring-offset-2 ring-gray-200' : ''
+                          }`}
+                          style={{ backgroundColor: color }}
+                          onClick={() => setSelectedColor(color)}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
                 <SortableContext
                   items={folderItems}
                   strategy={verticalListSortingStrategy}
