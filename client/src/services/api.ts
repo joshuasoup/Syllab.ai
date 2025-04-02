@@ -2,6 +2,7 @@ import { User } from '@/types/user';
 import { Syllabus } from '@/types/syllabus';
 import { getSession } from '@/lib/supabase';
 import { supabase } from '@/lib/supabase';
+import type { Folder } from '@/types/folder';
 
 // Base URL for your backend API
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
@@ -191,5 +192,40 @@ export const api = {
       }).then(data => data.response),
     getHistory: (syllabusId: string) =>
       fetchApi<{ messages: Array<{ role: string; content: string }> }>(`/syllabi/${syllabusId}/chat`),
+  },
+  folders: {
+    create: (name: string, color: string) => {
+      console.log('Creating folder:', { name, color });
+      return fetchApi<Folder>('/folders', {
+        method: 'POST',
+        body: JSON.stringify({ name, color }),
+      });
+    },
+    getAll: () => {
+      console.log('Fetching all folders');
+      return fetchApi<Folder[]>('/folders', {
+        method: 'GET',
+      });
+    },
+    update: (id: string, data: Partial<Folder>) => {
+      console.log('Updating folder:', { id, data });
+      return fetchApi<Folder>(`/folders/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      });
+    },
+    delete: (id: string) => {
+      console.log('Deleting folder:', { id });
+      return fetchApi(`/folders/${id}`, {
+        method: 'DELETE',
+      });
+    },
+    reorder: (folderIds: string[]) => {
+      console.log('Reordering folders:', folderIds);
+      return fetchApi<Folder[]>('/folders/reorder', {
+        method: 'POST',
+        body: JSON.stringify({ folderIds }),
+      });
+    },
   },
 }; 

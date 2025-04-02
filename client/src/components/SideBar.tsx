@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -15,7 +14,6 @@ import CommandKBadge from "@/components/shared/CommandKBadge";
 import { api } from "@/services/api";
 import type { User } from "@/types/user";
 import type { Syllabus } from "@/types/syllabus";
->>>>>>> main
 // Import logo as URL using Vite's special import syntax
 import logoUrl from '@images/syllabai-logo.png';
 

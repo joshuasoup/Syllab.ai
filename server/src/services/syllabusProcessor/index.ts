@@ -62,20 +62,37 @@ class SyllabusProcessor {
       
       // Step 1: Extract text from PDF
       console.log(`[SyllabusProcessor] Extracting text from PDF`);
-      const pdfText = await extractPdfText(filePath);
+      let pdfText: string;
+      try {
+        pdfText = await extractPdfText(filePath);
+      } catch (error: any) {
+        console.error(`[SyllabusProcessor] PDF extraction error:`, error);
+        throw new Error(`PDF extraction failed: ${error.message}`);
+      }
       console.log(`[SyllabusProcessor] PDF text extracted, length: ${pdfText.length}`);
       
       // Step 2: Analyze with Gemini
       console.log(`[SyllabusProcessor] Analyzing with Gemini`);
-      const highlights = await analyzeSyllabusWithGemini(pdfText);
+      let highlights: any;
+      try {
+        highlights = await analyzeSyllabusWithGemini(pdfText);
+      } catch (error: any) {
+        console.error(`[SyllabusProcessor] Gemini analysis error:`, error);
+        throw new Error(`Analysis failed: ${error.message}`);
+      }
       console.log(`[SyllabusProcessor] Analysis complete, highlights:`, highlights);
       
       // Step 3: Generate ICS content if events exist
       let icsContent: string | null = null;
       if (highlights?.ics_events?.length > 0) {
         console.log(`[SyllabusProcessor] Generating ICS content for ${highlights.ics_events.length} events`);
-        icsContent = await generateIcsContent(highlights.ics_events);
-        console.log(`[SyllabusProcessor] ICS content generated`);
+        try {
+          icsContent = await generateIcsContent(highlights.ics_events);
+          console.log(`[SyllabusProcessor] ICS content generated`);
+        } catch (error: any) {
+          console.error(`[SyllabusProcessor] ICS generation error:`, error);
+          // Don't throw here, just log the error and continue
+        }
       }
       
       // Step 4: Update the syllabus in Supabase

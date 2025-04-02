@@ -7,12 +7,13 @@ import authRoutes from './routes/authRoutes';
 import userRoutes from './routes/userRoutes';
 import fs from 'fs';
 import path from 'path';
+import folderRoutes from './routes/folderRoutes';
 
 // Load environment variables
 dotenv.config();
 
 // Create uploads directory if it doesn't exist
-const uploadsDir = path.join(__dirname, '../uploads');
+const uploadsDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
@@ -37,6 +38,7 @@ app.use('/api', userRoutes);
 
 // Other routes
 app.use('/api', chatRoutes);
+app.use('/api/folders', folderRoutes);
 
 // Error handling
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {

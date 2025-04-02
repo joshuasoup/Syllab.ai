@@ -163,6 +163,8 @@ export async function analyzeSyllabusWithGemini(syllabusText: string): Promise<a
     // Extract text and parse JSON
     const responseText = result.response.text();
     let jsonString = responseText;
+    
+    // Try to extract JSON from the response
     if (responseText.includes("```json")) {
       jsonString = responseText.split("```json")[1].split("```")[0].trim();
     } else if (responseText.includes("```")) {
@@ -173,17 +175,68 @@ export async function analyzeSyllabusWithGemini(syllabusText: string): Promise<a
       throw new Error("Gemini API returned empty text");
     }
 
-    // Parse JSON
-    let jsonObject = JSON.parse(jsonString);
+    // Try to parse JSON
+    let jsonObject;
+    try {
+      jsonObject = JSON.parse(jsonString);
+    } catch (parseError) {
+      console.error("Failed to parse Gemini response:", jsonString);
+      throw new Error("Failed to parse Gemini API response as JSON");
+    }
+
+    // Validate the response structure
+    if (!jsonObject || typeof jsonObject !== 'object') {
+      throw new Error("Invalid response structure from Gemini API");
+    }
+
+    // Ensure all required fields exist with default values
+    const defaultResponse = {
+      course_info: {
+        course_name: "",
+        course_code: "",
+        department: "",
+        course_website: ""
+      },
+      instructors: [],
+      class_schedule: {
+        meeting_days_times: "",
+        location: ""
+      },
+      tutorial_info: {
+        tutorial_times: "",
+        tutorial_locations: "",
+        tas: []
+      },
+      assessments: [],
+      important_deadlines: [],
+      policies: {
+        attendance: "",
+        late_work: "",
+        academic_integrity: "",
+        other: ""
+      },
+      textbooks: "",
+      other_details: "",
+      ics_events: [],
+      youtube_videos: [],
+      youtube_channels: []
+    };
+
+    // Merge the response with default values
+    const mergedResponse = {
+      ...defaultResponse,
+      ...jsonObject
+    };
     
     // Enhance the data with Rate My Professor links
-    jsonObject = addRateMyProfLinks(jsonObject);
+    const enhancedResponse = addRateMyProfLinks(mergedResponse);
     
-    return jsonObject;
+    return enhancedResponse;
   } catch (error: any) {
     if (error.name === "AbortError") {
       throw new Error("Gemini API request timed out after 60 seconds");
     }
+    console.error("Gemini analysis error:", error);
     throw new Error(`Gemini analysis error: ${error.message}`);
   }
 }
