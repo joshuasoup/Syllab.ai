@@ -9,6 +9,14 @@ export function GradeBreakdown({ assessments }: GradeBreakdownProps) {
   const totalWeight = assessments.reduce((sum, assessment) => 
     sum + (assessment.weight?.[0] || 0), 0);
 
+  // Helper function to format weight without duplicate % signs
+  const formatWeight = (weight: number | undefined) => {
+    if (weight === undefined) return 'Weight not specified';
+    // Convert to string and remove any existing % symbols
+    const cleanWeight = String(weight).replace(/%/g, '');
+    return `${cleanWeight}%`;
+  };
+
   return (
     <div className="space-y-4">
       <h3 className="text-xl font-semibold mb-4">Grade Breakdown</h3>
@@ -21,14 +29,14 @@ export function GradeBreakdown({ assessments }: GradeBreakdownProps) {
                   {`${assessment.name} ${assessment.num_submissions?.[0] ? `(${assessment.num_submissions[0]} submissions)` : ''}`}
                 </div>
                 <div className="text-sm text-gray-500">
-                  {assessment.weight?.[0] ? `${assessment.weight[0]}%` : 'Weight not specified'}
+                  {assessment.weight?.[0] ? formatWeight(assessment.weight[0]) : 'Weight not specified'}
                 </div>
               </div>
             </div>
           ))}
           {totalWeight > 0 && (
             <div className="mt-4 pt-4 border-t border-gray-200">
-              <div className="font-medium">Total Weight: {totalWeight}%</div>
+              <div className="font-medium">Total Weight: {formatWeight(totalWeight)}</div>
             </div>
           )}
         </div>

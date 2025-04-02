@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { auth, AuthenticatedRequest } from '../middleware/auth';
+import { auth } from '../middleware/auth';
 import {
   createFolder,
   getFolders,
@@ -23,11 +23,12 @@ router.use((req, res, next) => {
 
 router.use(auth);
 
-router.post('/', createFolder);
-router.get('/', getFolders);
-router.put('/:id', updateFolder);
-router.delete('/:id', deleteFolder);
-router.post('/reorder', reorderFolders);
-router.post('/add-position-column', addPositionColumn);
+// Use any type as a workaround for now
+router.post('/', createFolder as any);
+router.get('/', getFolders as any);
+router.put('/:id', updateFolder as any);
+router.delete('/:id', deleteFolder as any);
+router.post('/reorder', reorderFolders as any);
+router.post('/add-position-column', addPositionColumn as any);
 
 export default router; 

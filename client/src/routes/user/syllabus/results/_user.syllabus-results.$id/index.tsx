@@ -1,11 +1,12 @@
 // web/routes/_user.syllabus-result.$id/index.tsx
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   useParams,
   Link,
   useNavigate,
   useOutletContext,
+  useLocation,
 } from 'react-router-dom';
 import { api } from '@/services/api';
 import { useFindOne } from '@/hooks/useFindOne';
@@ -32,6 +33,11 @@ import {
   Share2,
   ExternalLink,
   Twitter,
+  Palette,
+  Download,
+  Check,
+  CheckCircle,
+  Circle,
 } from 'lucide-react';
 import type { AuthOutletContext } from '@/routes/_user';
 import { useAction } from '@/hooks/useAction';
@@ -43,14 +49,136 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { DeleteSyllabusButton } from "@/components/features/syllabus/DeleteSyllabusButton";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
+// Define an interface for completed tasks
+interface CompletedTask {
+  id: string;
+  title: string;
+  date: string;
+}
 
 export default function SyllabusResults() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useOutletContext<AuthOutletContext>();
+  const location = useLocation();
+  
+  // State declarations - all grouped together at the top
+  const [activeTab, setActiveTab] = useState<string>("calendar");
+  
+  // State for completed tasks
+  const [completedTasks, setCompletedTasks] = useState<CompletedTask[]>(() => {
+    if (!id) return [];
+    
+    // Load completed tasks from localStorage
+    const savedTasks = localStorage.getItem(`syllabus_completed_tasks_${id}`);
+    return savedTasks ? JSON.parse(savedTasks) : [];
+  });
+  
+  // Initialize bgColor state with loading from localStorage
+  const [bgColor, setBgColor] = useState(() => {
+    if (!id) return '#3b82f6'; // Default blue color
+    
+    // Look for color saved for this specific syllabus
+    const savedColor = localStorage.getItem(`syllabus_color_${id}`);
+    return savedColor || '#3b82f6'; // Return saved color or default blue
+  });
+
+  // Update color when syllabus ID changes
+  useEffect(() => {
+    if (id) {
+      const savedColor = localStorage.getItem(`syllabus_color_${id}`);
+      if (savedColor) {
+        console.log(`Loading color for syllabus ${id}: ${savedColor}`);
+        setBgColor(savedColor);
+      } else {
+        // If no color is saved for this syllabus, reset to default blue
+        console.log(`No saved color for syllabus ${id}, using default blue`);
+        setBgColor('#3b82f6');
+      }
+      
+      // Load completed tasks
+      const savedTasks = localStorage.getItem(`syllabus_completed_tasks_${id}`);
+      if (savedTasks) {
+        setCompletedTasks(JSON.parse(savedTasks));
+      }
+    }
+  }, [id]);
+
+  // Save color when changed
+  const handleColorChange = (color: string) => {
+    if (!id) return;
+    
+    console.log(`Saving color for syllabus ${id}: ${color}`);
+    setBgColor(color);
+    
+    // Save to localStorage with the syllabus ID as part of the key
+    localStorage.setItem(`syllabus_color_${id}`, color);
+  };
+  
+  // Toggle task completion status
+  const toggleTaskCompletion = (taskId: string, title: string, date: string) => {
+    if (!id) return;
+    
+    setCompletedTasks(prevTasks => {
+      // Check if task is already completed
+      const isCompleted = prevTasks.some(task => task.id === taskId);
+      
+      let newTasks;
+      if (isCompleted) {
+        // Remove task from completed list
+        newTasks = prevTasks.filter(task => task.id !== taskId);
+      } else {
+        // Add task to completed list
+        newTasks = [...prevTasks, { id: taskId, title, date }];
+      }
+      
+      // Save to localStorage
+      localStorage.setItem(`syllabus_completed_tasks_${id}`, JSON.stringify(newTasks));
+      
+      return newTasks;
+    });
+  };
+  
+  // Check if a task is completed
+  const isTaskCompleted = (taskId: string) => {
+    return completedTasks.some(task => task.id === taskId);
+  };
+
+  // Color options
+  const colorOptions = [
+    { color: '#3b82f6', name: 'Blue' },     // Blue (default)
+    { color: '#8b5cf6', name: 'Purple' },   // Purple
+    { color: '#ec4899', name: 'Pink' },     // Pink
+    { color: '#ef4444', name: 'Red' },      // Red
+    { color: '#f97316', name: 'Orange' },   // Orange
+    { color: '#eab308', name: 'Yellow' },   // Yellow
+    { color: '#22c55e', name: 'Green' },    // Green
+    { color: '#06b6d4', name: 'Cyan' },     // Cyan
+    { color: '#6366f1', name: 'Indigo' },   // Indigo
+    { color: '#475569', name: 'Slate' },    // Slate
+  ];
+
+  // Function to handle random color generation
+  const generateRandomColor = () => {
+    const hue = Math.floor(Math.random() * 360);
+    const color = `hsl(${hue}, 70%, 80%)`;
+    handleColorChange(color);
+  };
+
+  // Reset to default blue
+  const resetColor = () => {
+    handleColorChange('#3b82f6');
+  };
 
   // Validate ID
   const isValidId =
@@ -268,7 +396,7 @@ export default function SyllabusResults() {
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${syllabus.title || 'syllabus'}_calendar.ics`;
+    a.download = `${syllabus.title.replace(/\.pdf$/i, '')}_calendar.ics`;
     document.body.appendChild(a);
     a.click();
     window.URL.revokeObjectURL(url);
@@ -277,183 +405,296 @@ export default function SyllabusResults() {
   };
 
   return (
-    <div className="container mx-auto p-8 mt-10">
-      {/* Top Section */}
-      <div className="rounded-xl p-8 pb-0">
-        {/* Greeting Section */}
-        <div className="mb-8">
-          <div className="flex flex-col">
-            <div className="flex items-center justify-between">
-              <h1 className="text-4xl font-bold">
-                Hey{' '}
-                {user?.firstName
-                  ? `${user.firstName}${
-                      user.lastName ? ` ${user.lastName}` : ''
-                    }`
-                  : 'there'}
-                !
-              </h1>
-              <div className="flex items-center gap-3">
-                <div
-                  className="flex items-center gap-2 bg-blue-50 px-4 py-2 rounded-full cursor-pointer hover:bg-blue-100 transition-colors"
-                  onClick={handleDownloadCalendar}
-                >
-                  <CalendarIcon className="w-4 h-4 text-blue-600" />
-                  <span className="text-blue-600 font-medium">
-                    Add to Calendar
-                  </span>
+    <div className="container mx-auto p-4 mt-2 relative">
+      {/* Dashboard Header with Blue Background */}
+      <div 
+        className="rounded-xl p-6 mb-6 relative" 
+        style={{ background: bgColor }}
+      >
+        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-2 mb-3">
+          <div className="flex-1 min-w-0">
+            <h1 className="text-2xl sm:text-3xl font-bold whitespace-normal min-w-0 pr-4 text-white">
+              {syllabus.title.replace(/\.pdf$/i, '')}
+            </h1>
+          </div>
+          <div className="flex items-center flex-nowrap gap-2 mt-1 lg:mt-0">
+            <div
+              className="flex items-center gap-1 bg-white/70 px-2 py-1.5 rounded-full cursor-pointer hover:bg-white/90 transition-colors whitespace-nowrap text-xs"
+              onClick={handleDownloadCalendar}
+            >
+              <CalendarIcon className="w-3 h-3 flex-shrink-0 text-blue-500" />
+              <span className="font-medium text-gray-900">Add to Your Calendar</span>
+            </div>
+            <DeleteSyllabusButton 
+              syllabusId={id!}
+              variant="ghost"
+              className="flex items-center gap-1 bg-white/70 px-2 py-1.5 rounded-full hover:bg-white/90 transition-colors whitespace-nowrap text-xs h-auto"
+              redirectTo="/user/syllabus-upload"
+            >
+              <Trash2 className="w-3 h-3 flex-shrink-0 text-red-500 mr-1" />
+              <span className="font-medium text-gray-900">Delete</span>
+            </DeleteSyllabusButton>
+            <div className="flex items-center gap-1 bg-white/70 px-2 py-1.5 rounded-full cursor-pointer hover:bg-white/90 transition-colors whitespace-nowrap text-xs">
+              <MessageCircle className="w-3 h-3 flex-shrink-0 text-purple-500" />
+              <span className="font-medium text-gray-900">Chat</span>
+            </div>
+          </div>
+        </div>
+        <p className="text-white/90 font-medium text-sm mb-2">
+          Welcome to {data.course_info?.name || 'your course'}! You are{' '}
+          {data.assessments?.length || 0} assessments away from completing
+          the course.
+        </p>
+        {/* Color Picker in Bottom Right of Header */}
+        <Popover>
+          <PopoverTrigger asChild>
+            <div className="absolute bottom-2 right-2 w-8 h-8 bg-white/70 rounded-full flex items-center justify-center cursor-pointer hover:bg-white/90 transition-colors">
+              <Palette className="w-4 h-4 text-gray-600" />
+            </div>
+          </PopoverTrigger>
+          <PopoverContent className="w-64 p-3" side="top">
+            <div className="space-y-3">
+              <h4 className="font-medium text-sm">Dashboard Color</h4>
+              <div className="grid grid-cols-5 gap-2">
+                {colorOptions.map((option) => (
+                  <button
+                    key={option.color}
+                    className="w-10 h-10 rounded-md hover:scale-110 transition-all shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2"
+                    style={{ backgroundColor: option.color }}
+                    onClick={() => handleColorChange(option.color)}
+                    title={option.name}
+                  />
+                ))}
+              </div>
+              <div className="pt-2 flex justify-between">
+                <Button size="sm" onClick={generateRandomColor}>
+                  Random
+                </Button>
+                <Button size="sm" onClick={resetColor}>
+                  Reset
+                </Button>
+              </div>
+            </div>
+          </PopoverContent>
+        </Popover>
+      </div>
+
+      {/* Main Content Area */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        {/* Left Column - Calendar and Course Info */}
+        <div className="lg:col-span-1 flex flex-col gap-6">
+          {/* Calendar Widget - Google Calendar style */}
+          <Link
+            to={`/user/syllabus/${id}/calendar`}
+            className="rounded-xl border-2 border-gray-200 shadow-sm hover:shadow transition-all block"
+            state={{ from: location.pathname }}
+          >
+            <div className="p-3 bg-white border-b border-gray-100 flex items-center justify-between">
+              <h3 className="font-medium flex items-center text-gray-800">
+                <CalendarIcon className="w-4 h-4 mr-1.5" style={{ color: bgColor }} />
+                <span className="text-base">Calendar</span>
+              </h3>
+              <ChevronRight className="w-4 h-4 text-gray-400" />
+            </div>
+            
+            {/* Fixed date - April 2nd */}
+            <div className="p-3 bg-white">
+              {/* Today's date - redesigned for better theme fit */}
+              <div className="flex items-center mb-3">
+                <CalendarIcon className="w-4 h-4 mr-2" style={{ color: bgColor }} />
+                <div className="text-sm text-gray-800">
+                  <span className="font-medium">Wed 2nd, April 2024</span>
                 </div>
-                <DeleteSyllabusButton 
-                  syllabusId={id!}
-                  variant="ghost"
-                  className="flex items-center gap-2 bg-red-50 px-4 py-2 rounded-full hover:bg-red-100 transition-colors"
-                  redirectTo="/user/syllabus-upload"
-                />
-                <div className="flex items-center gap-2 bg-gray-50 px-4 py-2 rounded-full cursor-pointer hover:bg-gray-100 transition-colors">
-                  <MessageCircle className="w-4 h-4 text-gray-600" />
-                  <span className="text-gray-600 font-medium">Chat</span>
+              </div>
+              
+              <div className="border-t border-gray-100 -mx-3 mb-3"></div>
+              
+              {/* April 2nd events */}
+              <div>
+                {/* Display the events with exact same names as in calendar data */}
+                <div className="space-y-2">
+                  <h4 className="text-xs font-medium text-gray-500 uppercase mb-1">Today's Events</h4>
+                  <div className="flex items-start p-2 bg-gray-50 rounded-md">
+                    <div className="w-2 h-2 rounded-full mr-2 mt-1.5" style={{ backgroundColor: bgColor }}></div>
+                    <div className="flex-1">
+                      <div className="font-medium text-sm text-gray-800">
+                        COMP2401A Lecture
+                      </div>
+                      <div className="text-xs text-gray-500 flex items-center">
+                        <span>1:30-2:30 PM</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-start p-2 bg-gray-50 rounded-md">
+                    <div className="w-2 h-2 rounded-full mr-2 mt-1.5" style={{ backgroundColor: bgColor }}></div>
+                    <div className="flex-1">
+                      <div className="font-medium text-sm text-gray-800">
+                        COMP2401A Tutorial A3
+                      </div>
+                      <div className="text-xs text-gray-500 flex items-center">
+                        <span>3:30-4:30 PM</span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
-            <p className="text-gray-500 mt-2" style={{ fontWeight: 500 }}>
-              Welcome to {data.course_info?.name || 'your course'}! You are{' '}
-              {data.assessments?.length || 0} assessments away from completing
-              the course.
-            </p>
-          </div>
-        </div>
+          </Link>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          {/* Completed Tasks */}
-          <div className="bg-gray-100 rounded-lg p-4 flex items-center justify-between">
-            <div>
-              <div className="text-sm text-gray-600">Completed tasks</div>
-              <div className="text-2xl font-bold">85%</div>
-            </div>
-            <ClipboardList className="w-6 h-6 text-gray-400" />
-          </div>
-
-          {/* Customer Rating */}
-          <div className="bg-[#DFFB92] rounded-lg p-4 flex items-center justify-between">
-            <div>
-              <div className="text-sm text-gray-600">Customer rating</div>
-              <div className="text-2xl font-bold">4.8</div>
-            </div>
-            <Star className="w-6 h-6 text-yellow-400" />
-          </div>
-
-          {/* Average Time */}
-          <div className="bg-[#E9DBFB] rounded-lg p-4 flex items-center justify-between">
-            <div>
-              <div className="text-sm text-gray-600">Avg. time</div>
-              <div className="text-2xl font-bold">3.5h</div>
-            </div>
-            <Clock className="w-6 h-6 text-purple-400" />
-          </div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-8">
-        {/* Course Info Column */}
-        <div className="space-y-8">
           {/* Course Info Section */}
-          <div className="rounded-xl p-8">
-            <h2 className="text-3xl font-bold mb-6 border-b-2 border-gray-200 pb-4">
-              <Link
-                to={`/user/syllabus/${id}/course-info`}
-                className="flex items-center gap-2 hover:text-blue-600 transition-colors group"
-              >
+          <div className="rounded-lg border border-gray-200 p-4 shadow-sm">
+            <h3 className="font-medium flex items-center text-gray-800 border-b border-gray-100 pb-2 mb-3">
+              <div className="flex items-center justify-between w-full">
                 <div className="flex items-center gap-2">
-                  <span className="truncate" title={data.course_info?.name}>
+                  <span className="truncate" title={data.course_info?.name} style={{ color: bgColor }}>
                     {data.course_info?.name || 'Course Info'}
                   </span>
                   {data.course_info?.code && (
-                    <>
-                      <span className="text-gray-400">-</span>
-                      <span className="truncate" title={data.course_info.code}>
-                        {data.course_info.code}
-                      </span>
-                    </>
+                    <span className="text-xs text-gray-500">
+                      {data.course_info.code}
+                    </span>
                   )}
                 </div>
-                <ChevronRight className="w-5 h-5 opacity-0 group-hover:opacity-100 transition-opacity" />
-              </Link>
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <CourseInfo
-                instructors={data.instructors || []}
-                classSchedule={data.class_schedule}
-              />
-              <GradeBreakdown assessments={data.assessments || []} />
-            </div>
+                <Link 
+                  to={`/user/syllabus/${id}/course-info`}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </Link>
+              </div>
+            </h3>
+            <CourseInfo
+              instructors={data.instructors || []}
+              classSchedule={data.class_schedule}
+            />
           </div>
         </div>
 
-        {/* Calendar Section */}
-        <div className="rounded-xl p-8">
-          <h2 className="text-3xl font-bold mb-8 border-b-2 border-gray-200 pb-4">
-            <Link
-              to={`/user/syllabus/${id}/calendar`}
-              className="flex items-center gap-2 hover:text-blue-600 transition-colors group"
-            >
-              <span>Calendar</span>
-              <ChevronRight className="w-5 h-5 opacity-0 group-hover:opacity-100 transition-opacity" />
-            </Link>
+        {/* Assessments List Widget */}
+        <div
+          className="rounded-xl border-2 border-gray-200 p-6 shadow-md hover:shadow-lg transition-shadow lg:col-span-2"
+        >
+          <h2 className="text-2xl font-bold mb-6 pb-2 border-b border-gray-200 flex items-center">
+            <ClipboardList className="mr-2 h-5 w-5" style={{ color: bgColor }} />
+            <span>Assessments &amp; Deadlines</span>
           </h2>
-          <Calendar dates={allDates} />
-        </div>
-      </div>
-
-      <div className="flex flex-col gap-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold">{syllabus.title}</h1>
-            <Badge variant="outline" className="text-xs">
-              {syllabus.highlights?.course_info?.code || 'No course code'}
-            </Badge>
+          <div className="bg-gray-50 p-4 rounded-lg max-h-[500px] overflow-y-auto">
+            {allDates
+              .filter(event => event.type === 'assessment' || event.type === 'deadline')
+              .length > 0 ? (
+              <div className="space-y-2">
+                {/* All tasks (both active and completed), maintaining original order */}
+                {allDates
+                  .filter(event => event.type === 'assessment' || event.type === 'deadline')
+                  .map((event, index) => {
+                    const eventDate = new Date(event.date);
+                    const isUpcoming = eventDate >= new Date();
+                    const isPast = eventDate < new Date();
+                    const formattedDate = eventDate.toLocaleDateString('en-US', {
+                      weekday: 'short',
+                      month: 'short',
+                      day: 'numeric'
+                    });
+                    
+                    // Find matching assessment in the assessments array to get weight
+                    const assessmentData = data.assessments?.find(a => 
+                      a.name && a.name.toLowerCase() === event.title.toLowerCase()
+                    );
+                    
+                    const weight = assessmentData?.weight?.[0];
+                    const hasWeight = weight !== undefined;
+                    
+                    const taskId = `${event.title}-${event.date}`;
+                    const completed = isTaskCompleted(taskId);
+                    
+                    return (
+                      <div 
+                        key={index} 
+                        className={`flex flex-col p-3 rounded-lg ${
+                          completed ? 'bg-gray-50 border border-gray-200 opacity-75' :
+                          isPast ? 'bg-gray-50 border border-gray-200' : 
+                          isUpcoming ? `bg-${bgColor}/5 border border-${bgColor}/20` : 'bg-gray-50 border border-gray-200'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between mb-1">
+                          <div className="flex items-center gap-2">
+                            <div className={`px-2 py-1 text-xs font-medium rounded-full ${
+                              completed ? `bg-${bgColor}/20 text-${bgColor}` :
+                              isPast ? 'bg-gray-200 text-gray-700' : 
+                              isUpcoming ? `bg-${bgColor}/20 text-${bgColor}` : 'bg-gray-200 text-gray-700'
+                            }`}
+                            style={{
+                              backgroundColor: completed || isUpcoming ? `${bgColor}20` : '',
+                              color: completed || isUpcoming ? bgColor : ''
+                            }}>
+                              {completed ? 'Completed' : isPast ? 'Past' : 'Upcoming'}
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              {event.type === 'assessment' ? 'Assessment' : 'Deadline'}
+                            </div>
+                          </div>
+                          <div className="text-sm font-medium text-gray-600">
+                            {formattedDate}
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-start gap-2">
+                            <button 
+                              onClick={() => toggleTaskCompletion(taskId, event.title, event.date)}
+                              className="mt-0.5 flex-shrink-0 focus:outline-none"
+                            >
+                              {completed ? (
+                                <CheckCircle className="w-5 h-5" style={{ color: bgColor }} />
+                              ) : (
+                                <Circle 
+                                  className="w-5 h-5 text-gray-400 transition-colors" 
+                                  style={{ 
+                                    color: 'rgba(156, 163, 175, 1)',
+                                    ":hover": { color: bgColor } 
+                                  }}
+                                  onMouseOver={(e) => e.currentTarget.style.color = bgColor}
+                                  onMouseOut={(e) => e.currentTarget.style.color = 'rgba(156, 163, 175, 1)'}
+                                />
+                              )}
+                            </button>
+                            <div>
+                              <div className={`font-semibold ${completed ? 'line-through' : 'text-gray-900'}`}
+                                style={{ color: completed ? bgColor : '' }}>
+                                {event.title}
+                              </div>
+                              {hasWeight && (
+                                <div className={`text-xs mt-1 flex items-center ${completed ? 'text-gray-400' : 'text-gray-600'}`}>
+                                  <div className="w-20 h-1.5 bg-gray-200 rounded-full overflow-hidden mr-2">
+                                    <div 
+                                      className="h-full rounded-full"
+                                      style={{ 
+                                        backgroundColor: completed ? `${bgColor}80` : bgColor,
+                                        width: `${Math.min(weight, 100)}%` 
+                                      }}
+                                    ></div>
+                                  </div>
+                                  <span>Worth: {weight}%</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                          {assessmentData?.description && (
+                            <div className={`text-xs italic max-w-[250px] truncate ${completed ? 'text-gray-400' : 'text-gray-500'}`}>
+                              {assessmentData.description}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                No upcoming assessments found
+              </div>
+            )}
           </div>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                const url = window.location.href;
-                navigator.clipboard.writeText(url);
-                toast.success("Link copied to clipboard");
-              }}
-            >
-              <Share2 className="h-4 w-4 mr-2" />
-              Share
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                const url = window.location.href;
-                window.open(url, '_blank');
-              }}
-            >
-              <ExternalLink className="h-4 w-4 mr-2" />
-              Open in New Tab
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                const url = window.location.href;
-                window.open(`https://twitter.com/intent/tweet?url=${encodeURIComponent(url)}&text=${encodeURIComponent(`Check out my syllabus for ${syllabus.highlights?.course_info?.code || 'No course code'}: ${syllabus.title}`)}`, '_blank');
-              }}
-            >
-              <Twitter className="h-4 w-4 mr-2" />
-              Share on Twitter
-            </Button>
-          </div>
-        </div>
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <span>Last updated: {new Date(syllabus.updatedAt).toLocaleDateString()}</span>
-          <span>•</span>
-          <span>Created: {new Date(syllabus.createdAt).toLocaleDateString()}</span>
         </div>
       </div>
     </div>
