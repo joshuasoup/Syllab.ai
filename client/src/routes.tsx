@@ -69,8 +69,8 @@ export const router = createBrowserRouter([
             element: <SyllabusResults />,
           },
           {
-            path: 'syllabus/:id/calendar',
-            element: <CalendarRoute />,
+            path: "syllabus/:id/calendar",
+            element: <CalendarPage />,
           },
           // Add other protected user routes here
         ],
