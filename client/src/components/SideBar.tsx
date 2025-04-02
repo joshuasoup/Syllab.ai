@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useParams } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -97,12 +97,92 @@ interface SideBarProps {
   isCollapsed: boolean;
 }
 
+// Function to adjust color brightness for hover effects
+const adjustColorBrightness = (color: string, percent: number): string => {
+  try {
+    // Handle HSL colors
+    if (color.startsWith('hsl')) {
+      // Extract hue, saturation, and lightness from HSL format
+      const hslMatch = color.match(/hsl\((\d+),\s*(\d+)%,\s*(\d+)%\)/);
+      if (hslMatch) {
+        const h = parseInt(hslMatch[1], 10);
+        const s = parseInt(hslMatch[2], 10);
+        let l = parseInt(hslMatch[3], 10);
+        
+        // Adjust lightness for hover effect
+        l = Math.max(0, Math.min(100, l - 10)); // Darker for hover
+        
+        return `hsl(${h}, ${s}%, ${l}%)`;
+      }
+      return color; // Return original if parsing fails
+    }
+    
+    // Handle hex colors
+    if (color.startsWith('#')) {
+      // Convert hex to RGB
+      let r = parseInt(color.substring(1, 3), 16);
+      let g = parseInt(color.substring(3, 5), 16);
+      let b = parseInt(color.substring(5, 7), 16);
+
+      // Adjust brightness
+      r = Math.max(0, Math.min(255, r + percent));
+      g = Math.max(0, Math.min(255, g + percent));
+      b = Math.max(0, Math.min(255, b + percent));
+
+      // Convert back to hex
+      return `#${Math.round(r).toString(16).padStart(2, '0')}${Math.round(g).toString(16).padStart(2, '0')}${Math.round(b).toString(16).padStart(2, '0')}`;
+    }
+    
+    return color; // Return original color for other formats
+  } catch (error) {
+    console.error("Error adjusting color brightness:", error);
+    return color; // Return original color on error
+  }
+};
+
 const SideBar = ({ user, isCollapsed }: SideBarProps) => {
   const location = useLocation();
   const [syllabusesOpen, setSyllabusesOpen] = useState(true);
   const [syllabuses, setSyllabuses] = useState<Syllabus[] | null>(null);
   const [fetching, setFetching] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [themeColor, setThemeColor] = useState('#3b82f6'); // Default blue color
+  
+  // Get current syllabus ID from URL if available
+  const currentSyllabusId = location.pathname.match(/\/user\/syllabus-results\/([^\/]+)/)?.[1];
+
+  // Load theme color from localStorage
+  useEffect(() => {
+    const updateThemeColor = () => {
+      if (currentSyllabusId) {
+        const savedColor = localStorage.getItem(`syllabus_color_${currentSyllabusId}`);
+        if (savedColor) {
+          setThemeColor(savedColor);
+        } else {
+          setThemeColor('#3b82f6'); // Default blue color
+        }
+      }
+    };
+    
+    // Initial load
+    updateThemeColor();
+    
+    // Listen for theme color changes
+    const handleThemeColorChange = (e: CustomEvent) => {
+      if (e.detail && e.detail.color) {
+        console.log('Theme color changed:', e.detail.color, 'Current syllabus:', currentSyllabusId, 'Event syllabus:', e.detail.syllabusId);
+        
+        // Always update the theme color - when viewing a syllabus, we want the upload button to match
+        setThemeColor(e.detail.color);
+      }
+    };
+    
+    window.addEventListener('themeColorChange', handleThemeColorChange as EventListener);
+    
+    return () => {
+      window.removeEventListener('themeColorChange', handleThemeColorChange as EventListener);
+    };
+  }, [currentSyllabusId]);
 
   // Function to fetch syllabuses
   const fetchSyllabuses = async () => {
@@ -216,7 +296,19 @@ const SideBar = ({ user, isCollapsed }: SideBarProps) => {
         </div>
         <Link
           to="/user/syllabus-upload"
-          className={`flex items-center w-full px-3 py-2 mb-3 mt-4 text-sm font-medium rounded-sm bg-blue-600 hover:bg-blue-700 text-white transition-colors ${isCollapsed ? 'justify-center' : ''}`}
+          className={`flex items-center w-full px-3 py-2 mb-3 mt-4 text-sm font-medium rounded-sm text-white transition-colors ${isCollapsed ? 'justify-center' : ''}`}
+          style={{ 
+            backgroundColor: themeColor,
+            borderColor: themeColor,
+          }}
+          onMouseOver={(e) => {
+            // Darken the background color for hover effect
+            e.currentTarget.style.backgroundColor = adjustColorBrightness(themeColor, -15);
+          }}
+          onMouseOut={(e) => {
+            // Restore original color
+            e.currentTarget.style.backgroundColor = themeColor;
+          }}
         >
           <FileText className={`${isCollapsed ? 'w-4 h-4' : 'w-3 h-3 mr-2 flex-shrink-0'}`} />
           <span className={`whitespace-nowrap transition-all duration-300 ${isCollapsed ? 'w-0 opacity-0' : 'w-auto opacity-100'}`}>

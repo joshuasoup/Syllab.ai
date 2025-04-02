@@ -123,6 +123,12 @@ export default function SyllabusResults() {
     
     // Save to localStorage with the syllabus ID as part of the key
     localStorage.setItem(`syllabus_color_${id}`, color);
+    
+    // Dispatch custom event for other components to listen for color changes
+    const colorChangeEvent = new CustomEvent('themeColorChange', { 
+      detail: { color, syllabusId: id } 
+    });
+    window.dispatchEvent(colorChangeEvent);
   };
   
   // Toggle task completion status
@@ -442,7 +448,10 @@ export default function SyllabusResults() {
         </div>
         <p className="text-white/90 font-medium text-sm mb-2">
           Welcome to {data.course_info?.name || 'your course'}! You are{' '}
-          {data.assessments?.length || 0} assessments away from completing
+          {allDates
+            .filter(event => event.type === 'assessment' || event.type === 'deadline')
+            .filter(event => !isTaskCompleted(`${event.title}-${event.date}`))
+            .length || 0} assessments away from completing
           the course.
         </p>
         {/* Color Picker in Bottom Right of Header */}
@@ -486,28 +495,24 @@ export default function SyllabusResults() {
           {/* Calendar Widget - Google Calendar style */}
           <Link
             to={`/user/syllabus/${id}/calendar`}
-            className="rounded-xl border-2 border-gray-200 shadow-sm hover:shadow transition-all block"
+            className="rounded-xl border-2 border-gray-200 shadow-sm hover:shadow transition-all block group"
             state={{ from: location.pathname }}
           >
-            <div className="p-3 bg-white border-b border-gray-100 flex items-center justify-between">
-              <h3 className="font-medium flex items-center text-gray-800">
-                <CalendarIcon className="w-4 h-4 mr-1.5" style={{ color: bgColor }} />
-                <span className="text-base">Calendar</span>
-              </h3>
-              <ChevronRight className="w-4 h-4 text-gray-400" />
-            </div>
-            
-            {/* Fixed date - April 2nd */}
-            <div className="p-3 bg-white">
+            <div className="p-6 bg-white relative">
+              <h2 className="text-2xl font-bold mb-6 pb-2 border-b border-gray-200 flex items-center justify-between group-hover:text-[color:var(--theme-color)] transition-colors" style={{ "--theme-color": bgColor } as React.CSSProperties}>
+                <div className="flex items-center">
+                  <CalendarIcon className="mr-2 h-5 w-5 group-hover:text-[color:var(--theme-color)] transition-colors group-hover:drop-shadow-md" style={{ color: bgColor, "--theme-color": bgColor } as React.CSSProperties} />
+                  <span className="group-hover:drop-shadow-sm">Calendar</span>
+                </div>
+                <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-[color:var(--theme-color)] transition-transform group-hover:translate-x-1" style={{ "--theme-color": bgColor } as React.CSSProperties} />
+              </h2>
+              
               {/* Today's date - redesigned for better theme fit */}
               <div className="flex items-center mb-3">
-                <CalendarIcon className="w-4 h-4 mr-2" style={{ color: bgColor }} />
                 <div className="text-sm text-gray-800">
                   <span className="font-medium">Wed 2nd, April 2024</span>
                 </div>
               </div>
-              
-              <div className="border-t border-gray-100 -mx-3 mb-3"></div>
               
               {/* April 2nd events */}
               <div>
@@ -543,10 +548,10 @@ export default function SyllabusResults() {
 
           {/* Course Info Section */}
           <div className="rounded-lg border border-gray-200 p-4 shadow-sm">
-            <h3 className="font-medium flex items-center text-gray-800 border-b border-gray-100 pb-2 mb-3">
+            <h3 className="font-bold text-gray-800 border-b border-gray-100 pb-2 mb-3">
               <div className="flex items-center justify-between w-full">
                 <div className="flex items-center gap-2">
-                  <span className="truncate" title={data.course_info?.name} style={{ color: bgColor }}>
+                  <span className="truncate" title={data.course_info?.name}>
                     {data.course_info?.name || 'Course Info'}
                   </span>
                   {data.course_info?.code && (
@@ -555,12 +560,6 @@ export default function SyllabusResults() {
                     </span>
                   )}
                 </div>
-                <Link 
-                  to={`/user/syllabus/${id}/course-info`}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <ChevronRight className="w-4 h-4" />
-                </Link>
               </div>
             </h3>
             <CourseInfo
@@ -588,13 +587,14 @@ export default function SyllabusResults() {
                   .filter(event => event.type === 'assessment' || event.type === 'deadline')
                   .map((event, index) => {
                     const eventDate = new Date(event.date);
-                    const isUpcoming = eventDate >= new Date();
-                    const isPast = eventDate < new Date();
-                    const formattedDate = eventDate.toLocaleDateString('en-US', {
-                      weekday: 'short',
-                      month: 'short',
-                      day: 'numeric'
-                    });
+                    const isUpcoming = !isNaN(eventDate.getTime()) && eventDate >= new Date();
+                    const isPast = !isNaN(eventDate.getTime()) && eventDate < new Date();
+                    const formattedDate = !isNaN(eventDate.getTime()) ? 
+                      eventDate.toLocaleDateString('en-US', {
+                        weekday: 'short',
+                        month: 'short',
+                        day: 'numeric'
+                      }) : 'No date';
                     
                     // Find matching assessment in the assessments array to get weight
                     const assessmentData = data.assessments?.find(a => 
@@ -607,27 +607,32 @@ export default function SyllabusResults() {
                     const taskId = `${event.title}-${event.date}`;
                     const completed = isTaskCompleted(taskId);
                     
+                    // Default to upcoming for items with invalid dates
+                    const status = completed ? 'completed' : 
+                                  isPast ? 'past' : 
+                                  'upcoming'; // Default to upcoming for invalid dates too
+                    
                     return (
                       <div 
                         key={index} 
                         className={`flex flex-col p-3 rounded-lg ${
-                          completed ? 'bg-gray-50 border border-gray-200 opacity-75' :
-                          isPast ? 'bg-gray-50 border border-gray-200' : 
-                          isUpcoming ? `bg-${bgColor}/5 border border-${bgColor}/20` : 'bg-gray-50 border border-gray-200'
+                          status === 'completed' ? 'bg-gray-50 border border-gray-200 opacity-75' :
+                          status === 'past' ? 'bg-gray-50 border border-gray-200' : 
+                          `bg-${bgColor}/5 border border-${bgColor}/20`
                         }`}
                       >
                         <div className="flex items-center justify-between mb-1">
                           <div className="flex items-center gap-2">
                             <div className={`px-2 py-1 text-xs font-medium rounded-full ${
-                              completed ? `bg-${bgColor}/20 text-${bgColor}` :
-                              isPast ? 'bg-gray-200 text-gray-700' : 
-                              isUpcoming ? `bg-${bgColor}/20 text-${bgColor}` : 'bg-gray-200 text-gray-700'
+                              status === 'completed' ? `bg-${bgColor}/20 text-${bgColor}` :
+                              status === 'past' ? 'bg-gray-200 text-gray-700' : 
+                              `bg-${bgColor}/20 text-${bgColor}`
                             }`}
                             style={{
-                              backgroundColor: completed || isUpcoming ? `${bgColor}20` : '',
-                              color: completed || isUpcoming ? bgColor : ''
-                            }}>
-                              {completed ? 'Completed' : isPast ? 'Past' : 'Upcoming'}
+                              backgroundColor: status === 'completed' || status === 'upcoming' ? `${bgColor}20` : ''
+                            }}
+                            >
+                              {status === 'completed' ? 'Completed' : status === 'past' ? 'Past' : 'Upcoming'}
                             </div>
                             <div className="text-xs text-gray-500">
                               {event.type === 'assessment' ? 'Assessment' : 'Deadline'}
@@ -674,7 +679,7 @@ export default function SyllabusResults() {
                                       }}
                                     ></div>
                                   </div>
-                                  <span>Worth: {weight}%</span>
+                                  <span>Worth: {weight}</span>
                                 </div>
                               )}
                             </div>
@@ -690,9 +695,7 @@ export default function SyllabusResults() {
                   })}
               </div>
             ) : (
-              <div className="text-center py-8 text-gray-500">
-                No upcoming assessments found
-              </div>
+              <div className="text-center text-gray-500">No assessments or deadlines found</div>
             )}
           </div>
         </div>
