@@ -86,7 +86,10 @@ export const Navbar = () => {
     <div className="fixed top-0 left-0 w-full bg-white z-50 py-4 px-0">
       {/* max-w-7xl is what gets the padding */}
       <div className="max-w-7xl mx-auto flex justify-between items-center">
-        <Link to="/user/syllabus-upload" className="text-2xl font-semibold flex items-center gap-2">
+        <Link
+          to="/dashboard"
+          className="text-2xl font-semibold flex items-center gap-2"
+        >
           <img src={imgUrl} alt="SyllabAI Logo" className="h-8 w-8 mr-2" />
           <span className="text-black" style={{ fontWeight: 600 }}>
             SyllabAI
