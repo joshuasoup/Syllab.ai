@@ -52,9 +52,7 @@ export function CourseInfo({ instructors, classSchedule }: CourseInfoProps) {
             <div key={index} className="border-2 border-gray-100 rounded-lg p-4">
               <div className="flex items-center justify-between">
                 <div className="font-medium">{instructor.name}</div>
-                {instructor.name && (!instructor.role || 
-                  instructor.role.toLowerCase().includes('professor') || 
-                  instructor.role.toLowerCase().includes('instructor')) && (
+                {instructor.name && (
                   <a 
                     href={getRateMyProfessorUrl(instructor.name)}
                     target="_blank" 

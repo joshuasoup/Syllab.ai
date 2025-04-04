@@ -1,16 +1,19 @@
 import React from "react";
-import { useParams, useOutletContext } from "react-router-dom";
+import { useParams, useOutletContext, useNavigate, useLocation } from "react-router-dom";
 import { useFindOne } from "@/hooks/useFindOne";
 import { api } from "@/services/api";
 import KanbanBoard from "@/components/features/syllabus/KanbanBoard";
-import { Loader2 } from "lucide-react";
+import { Loader2, ArrowLeft } from "lucide-react";
 import type { Syllabus, ICSEvent } from "@/types/syllabus";
 import { extractDateFromText } from "@/components/features/syllabus/SubComponents";
 import type { AuthOutletContext } from "@/routes/_user";
+import { Button } from "@/components/ui/button";
 
 export default function CalendarRoute() {
   const { id } = useParams();
   const { user } = useOutletContext<AuthOutletContext>();
+  const navigate = useNavigate();
+  const location = useLocation();
   
   const [{ data: syllabus, fetching, error }] = useFindOne<Syllabus>(
     () => api.syllabus.getById(id!),
@@ -36,6 +39,12 @@ export default function CalendarRoute() {
           <p className="text-gray-600 mb-4">
             {error ? "Unable to load syllabus" : "Syllabus not found"}
           </p>
+          <Button 
+            variant="outline"
+            onClick={() => navigate('/user/syllabus-upload')}
+          >
+            Back to Upload
+          </Button>
         </div>
       </div>
     );
@@ -117,6 +126,23 @@ export default function CalendarRoute() {
   return (
     <div className="container mx-auto p-8">
       <div className="max-w-7xl mx-auto">
+        <div className="flex items-center gap-2 mb-6">
+          <Button 
+            variant="outline" 
+            size="sm"
+            className="flex items-center gap-1" 
+            onClick={() => {
+              if (location.state && location.state.from) {
+                navigate(location.state.from);
+              } else {
+                navigate(`/user/syllabus-results/${id}`);
+              }
+            }}
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to Results
+          </Button>
+        </div>
         <h1 className="text-3xl font-bold mb-8">Course Timeline</h1>
         <KanbanBoard dates={allDates} />
       </div>
