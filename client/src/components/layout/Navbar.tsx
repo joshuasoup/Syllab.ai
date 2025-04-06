@@ -83,32 +83,36 @@ export const Navbar = () => {
   const { user } = useAuth();
 
   return (
-    <div className="fixed top-0 left-0 w-full bg-white z-50 py-4 px-0">
-      {/* max-w-7xl is what gets the padding */}
-      <div className="max-w-7xl mx-auto flex justify-between items-center">
-        <Link
-          to="/dashboard"
-          className="text-2xl font-semibold flex items-center gap-2"
-        >
-          <img src={imgUrl} alt="SyllabAI Logo" className="h-8 w-8 mr-2" />
-          <span className="text-black" style={{ fontWeight: 600 }}>
-            SyllabAI
-          </span>
-        </Link>
-        {user ? (
-          <UserMenu />
-        ) : (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="w-14 h-14 p-0 flex items-center justify-center transition-all border border-transparent"
-            asChild
+    <div className="fixed top-0 left-0 w-full z-50 px-4 py-3 mt-1">
+      {/* Detached navbar with shadow and border */}
+      <div className="max-w-[800px] mx-auto bg-white rounded-3xl shadow-md border border-gray-200 px-6">
+        <div className="flex justify-between items-center">
+          <Link
+            to="/dashboard"
+            className="text-3xl font-semibold flex items-center gap-3"
           >
-            <Link to="auth/sign-up">
-              <UserSilhouette className="text-black w-full h-full" />
-            </Link>
-          </Button>
-        )}
+            <img src={imgUrl} alt="SyllabAI Logo" className="h-10 w-10" />
+            <span className="text-black" style={{ fontWeight: 600 }}>
+              SyllabAI
+            </span>
+          </Link>
+          {user ? (
+            <div className="scale-110 mr-3">
+              <UserMenu />
+            </div>
+          ) : (
+            <Button
+              variant="ghost"
+              size="lg"
+              className="w-16 h-16 p-0 flex items-center justify-center transition-all border border-transparent mr-3"
+              asChild
+            >
+              <Link to="auth/sign-up">
+                <UserSilhouette className="text-black w-full h-full" />
+              </Link>
+            </Button>
+          )}
+        </div>
       </div>
     </div>
   );
