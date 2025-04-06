@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { MoreVertical, PlusCircle, Trash2, Pencil } from 'lucide-react';
@@ -16,6 +16,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
+import { motion } from 'framer-motion';
 
 interface Task {
   id: string;
@@ -51,6 +52,9 @@ export default function Dashboard() {
   const [currentTask, setCurrentTask] = useState<Task | null>(null);
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [newTaskDueDate, setNewTaskDueDate] = useState('');
+  const [activeDot, setActiveDot] = useState<number | null>(null);
+
+  const taskRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   const handleTaskToggle = (taskId: string) => {
     setTasks(
@@ -106,6 +110,14 @@ export default function Dashboard() {
     setIsEditTaskOpen(true);
   };
 
+  const scrollToTask = (index: number) => {
+    const taskElement = taskRefs.current[index];
+    if (taskElement) {
+      taskElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      setActiveDot(index);
+    }
+  };
+
   return (
     <div className="w-[1728px] h-[1117px] relative bg-white shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] overflow-hidden">
       {/* Decorative elements */}
@@ -125,6 +137,21 @@ export default function Dashboard() {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Navigation dots */}
+      <div className="absolute right-8 top-1/2 transform -translate-y-1/2 flex flex-col items-center gap-4">
+        {tasks.map((_, index) => (
+          <motion.button
+            key={index}
+            className={`w-3 h-3 rounded-full ${
+              activeDot === index ? 'bg-blue-500' : 'bg-black'
+            } cursor-pointer hover:bg-blue-500 transition-colors`}
+            onClick={() => scrollToTask(index)}
+            whileHover={{ scale: 1.2 }}
+            whileTap={{ scale: 0.9 }}
+          />
+        ))}
       </div>
 
       <div
@@ -150,9 +177,10 @@ export default function Dashboard() {
           <div className="pl-6">
             <div className="absolute left-0 top-[-800px] bottom-[-800px] w-1 bg-gray-900"></div>
             <div className="space-y-4">
-              {tasks.map((task) => (
+              {tasks.map((task, index) => (
                 <div
                   key={task.id}
+                  ref={(el) => (taskRefs.current[index] = el)}
                   className="flex items-center gap-4 p-4 bg-white rounded-lg hover:bg-gray-50 transition-colors"
                 >
                   <Checkbox
