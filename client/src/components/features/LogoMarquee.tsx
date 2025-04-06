@@ -62,19 +62,7 @@ export const LogoMarquee = () => {
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       style={{
-        backgroundColor: "white",
-        backgroundImage: `
-          linear-gradient(
-            to bottom,
-            transparent 0%,
-            transparent 35%,
-            white 50%,
-            transparent 65%,
-            transparent 100%
-          ),
-          repeating-linear-gradient(0deg, rgba(0,0,0,0.05) 0, rgba(0,0,0,0.05) 1px, transparent 1px, transparent 25px),
-          repeating-linear-gradient(90deg, rgba(0,0,0,0.05) 0, rgba(0,0,0,0.05) 1px, transparent 1px, transparent 25px)
-        `,
+        
         backgroundSize: "cover, 25px 25px, 25px 25px",
       }}
     >
