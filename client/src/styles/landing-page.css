@@ -42,12 +42,34 @@ body.landing-page {
 }
 
 .grid-background {
-  background-color: #f8f9fa;
-  background-image: 
-    radial-gradient(circle at center, rgba(255,255,255,0) 0%, white 95%),
-    repeating-linear-gradient(0deg, rgba(0,0,0,0.05) 0, rgba(0,0,0,0.05) 1px, transparent 1px, transparent 25px),
-    repeating-linear-gradient(90deg, rgba(0,0,0,0.05) 0, rgba(0,0,0,0.05) 1px, transparent 1px, transparent 25px);
+  background-color: #fff;
+  /* The base color if everything else is transparent */
+
+  /*
+    1) radial-gradient on TOP
+       -> Transparent in the center, white at edges
+    2) repeating-linear-gradient(...) row lines
+    3) repeating-linear-gradient(...) column lines
+  */
+  background-image:
+    radial-gradient(circle at center,
+      /* center is transparent, so we see the grid below */
+      rgba(255, 255, 255, 0) 10%,
+      /* edges become white, covering the grid */
+      #fff 100%),
+    repeating-linear-gradient(0deg,
+      rgba(0, 0, 0, 0.05) 0,
+      rgba(0, 0, 0, 0.05) 1px,
+      transparent 1px,
+      transparent 25px),
+    repeating-linear-gradient(90deg,
+      rgba(0, 0, 0, 0.05) 0,
+      rgba(0, 0, 0, 0.05) 1px,
+      transparent 1px,
+      transparent 25px);
+
   background-size: cover, 25px 25px, 25px 25px;
+  background-repeat: no-repeat, repeat, repeat;
 }
 
 .gradient-button {
