@@ -57,7 +57,7 @@ export const router = createBrowserRouter([
         loader: userLoader,
         children: [
           {
-            path: 'syllabus-upload',
+            path: 'syllabus/upload',
             element: <SyllabusUpload />,
           },
           {
@@ -69,7 +69,7 @@ export const router = createBrowserRouter([
             element: <SyllabusResults />,
           },
           {
-            path: "syllabus/:id/calendar",
+            path: 'syllabus/:id/calendar',
             element: <CalendarRoute />,
           },
           // Add other protected user routes here
