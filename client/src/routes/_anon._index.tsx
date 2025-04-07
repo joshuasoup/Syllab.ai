@@ -1,11 +1,11 @@
 import { Button } from '@/components/ui/button';
 import { redirect, useNavigate } from 'react-router-dom';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Navbar } from '@/components/layout/Navbar';
 import { LogoMarquee } from '@/components/features/LogoMarquee';
 import { getSession } from '@/lib/supabase';
 import '../styles/landing-page.css';
-import ParallaxBackground from '@/components/layout/ParallaxBackground';
+import { SplineWithPlaceholder } from '@/components/features/SplineWithPlaceholder';
 
 // A full page background wrapper with position:relative
 const FullPageBackground = ({ children }: { children: React.ReactNode }) => {
@@ -19,7 +19,7 @@ const FullPageBackground = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   return (
-    <div className="full-page-background" style={{ position: 'relative' }}>
+    <div className="full-page-background flex flex-col min-h-screen" style={{ position: 'relative' }}>
       {children}
     </div>
   );
@@ -64,50 +64,44 @@ export default function LandingPage() {
         style={{ position: 'relative', zIndex: 1 }}
       >
         {/* <ParallaxBackground /> */}
-        <div className="w-full max-w-7xl h-screen mx-auto">
-          {/* Intro Section */}
+        <div className="w-full max-w-7xl mx-auto">
+          {/* Intro Section - Modified to grid layout */}
           <div
-            className="text-center space-y-10 pb-20 pt-56 grid-background"
-          
+            className="grid-background pt-5 md:pt-6"
           >
-            <h1
-              className="text-6xl md:text-8xl font-bold text-slate-900"
-              style={{
-                fontWeight: 800,
-                letterSpacing: '0.02em',
-                lineHeight: 1.1,
-              }}
-            >
-              Never Open
-              <br />A{' '}
-              <span className="syllab-ai-gradient inline-block">Syllabus</span>{' '}
-              Again.
-            </h1>
-            <h2
-              className="font-bold mt-6"
-              style={{ letterSpacing: '0.02em', marginTop: '10px' }}
-            >
-              <span style={{ fontWeight: 500, opacity: 0.85 }}>
-                Introducing{' '}
-              </span>
-              <span
-                className="syllab-ai-gradient"
-                style={{ fontWeight: 700 }}
-              >
-                SyllabAI
-              </span>
-            </h2>
-          </div>
-
-          {/* University Logo Banner */}
-          <div className="w-full my-16 overflow-hidden">
-            <h4 className="text-center text-xs font-bold uppercase tracking-wide text-slate-400">
-              Trusted By University Students Across The Country
-            </h4>
-            <LogoMarquee />
-
-            {/* Login Button */}
-            <div className="flex justify-center mb-6 mt-20">
+            {/* Grid container for side-by-side layout */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center " style={{ minHeight: '605px' }}>
+              {/* Left side - Heading text */}
+              <div className="text-left space-y-6 md:pr-4">
+                <h1
+                  className="text-5xl md:text-7xl lg:text-8xl font-bold text-slate-900"
+                  style={{
+                    fontWeight: 800,
+                    letterSpacing: '0.02em',
+                    lineHeight: 1.1,
+                  }}
+                >
+                  Never Open
+                  <br />A{' '}
+                  <span className="syllab-ai-gradient inline-block">Syllabus</span>{' '}
+                  Again.
+                </h1>
+                <h2
+                  className="font-bold"
+                  style={{ letterSpacing: '0.02em' }}
+                >
+                  <span style={{ fontWeight: 500, opacity: 0.85 }}>
+                    Introducing{' '}
+                  </span>
+                  <span
+                    className="syllab-ai-gradient"
+                    style={{ fontWeight: 700 }}
+                  >
+                    SyllabAI
+                  </span>
+                </h2>
+                {/* Login Button */}
+            <div className="flex  mb-6 mt-20">
               <Button
                 className="w-52 h-14 rounded-xl text-white text-lg font-semibold 
                   transition-all hover:scale-105 hover:opacity-90 flex flex-row 
@@ -117,11 +111,33 @@ export default function LandingPage() {
                 See It in Action
               </Button>
             </div>
+              </div>
+              
+              {/* Right side - Spline animation with placeholder */}
+                <div
+                  style={{ width: '520px', height: '100%' }}
+                  className="hidden md:block"
+                >
+                  <SplineWithPlaceholder
+                    scene="https://prod.spline.design/j6cypn3zASuSQtRB/scene.splinecode"
+                  />
+                </div>
+            </div>
+          </div>
+
+          {/* University Logo Banner - Kept below */}
+          <div className="w-full my-16 overflow-hidden">
+            <h4 className="text-center text-xs font-bold uppercase tracking-wide text-slate-400">
+              Trusted By University Students Across The Country
+            </h4>
+            <LogoMarquee />
+
+            
           </div>
         </div>
       </div>
 
-      <footer className="bg-[#2b2b2b] rounded-lg shadow-sm dark:bg-gray-900 m-4 relative z-1">
+      <footer className="bg-[#2b2b2b] rounded-lg shadow-sm dark:bg-gray-900 m-4 relative z-1 mt-auto">
         <div className="w-full max-w-screen-xl mx-auto p-4 md:py-10">
           <div className="sm:flex sm:items-center sm:justify-between">
             <a
