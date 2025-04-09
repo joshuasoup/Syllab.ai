@@ -500,45 +500,54 @@ export default function SyllabusResults() {
               {/* Today's date - redesigned for better theme fit */}
               <div className="flex items-center mb-3">
                 <div className="text-sm text-gray-800">
-                  <span className="font-medium">Wed 2nd, April 2024</span>
+                  <span className="font-medium">
+                    {new Date().toLocaleDateString('en-US', {
+                      weekday: 'short',
+                      day: 'numeric',
+                      month: 'long',
+                      year: 'numeric'
+                    })}
+                  </span>
                 </div>
               </div>
 
-              {/* April 2nd events */}
+              {/* Today's events */}
               <div>
-                {/* Display the events with exact same names as in calendar data */}
                 <div className="space-y-2">
                   <h4 className="text-xs font-medium text-gray-500 uppercase mb-1">
                     Today's Events
                   </h4>
-                  <div className="flex items-start p-2 bg-gray-50 rounded-md">
-                    <div
-                      className="w-2 h-2 rounded-full mr-2 mt-1.5"
-                      style={{ backgroundColor: bgColor }}
-                    ></div>
-                    <div className="flex-1">
-                      <div className="font-medium text-sm text-gray-800">
-                        COMP2401A Lecture
+                  {(() => {
+                    const today = new Date().toISOString().split('T')[0];
+                    const todayEvents = allDates.filter(event => event.date === today);
+                    
+                    if (todayEvents.length === 0) {
+                      return (
+                        <div className="text-sm text-gray-500 italic">
+                          No events scheduled for today
+                        </div>
+                      );
+                    }
+
+                    return todayEvents.map((event, index) => (
+                      <div key={index} className="flex items-start p-2 bg-gray-50 rounded-md">
+                        <div
+                          className="w-2 h-2 rounded-full mr-2 mt-1.5"
+                          style={{ backgroundColor: bgColor }}
+                        ></div>
+                        <div className="flex-1">
+                          <div className="font-medium text-sm text-gray-800">
+                            {event.title}
+                          </div>
+                          {event.location && (
+                            <div className="text-xs text-gray-500 flex items-center">
+                              <span>{event.location}</span>
+                            </div>
+                          )}
+                        </div>
                       </div>
-                      <div className="text-xs text-gray-500 flex items-center">
-                        <span>1:30-2:30 PM</span>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex items-start p-2 bg-gray-50 rounded-md">
-                    <div
-                      className="w-2 h-2 rounded-full mr-2 mt-1.5"
-                      style={{ backgroundColor: bgColor }}
-                    ></div>
-                    <div className="flex-1">
-                      <div className="font-medium text-sm text-gray-800">
-                        COMP2401A Tutorial A3
-                      </div>
-                      <div className="text-xs text-gray-500 flex items-center">
-                        <span>3:30-4:30 PM</span>
-                      </div>
-                    </div>
-                  </div>
+                    ));
+                  })()}
                 </div>
               </div>
             </div>
