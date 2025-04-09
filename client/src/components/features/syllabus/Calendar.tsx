@@ -1,5 +1,7 @@
 import React, { useState } from "react";
-import { ChevronLeft, ChevronRight, Search, Plus } from "lucide-react";
+import { ChevronLeft, ChevronRight, Search, Plus, Calendar as CalendarIcon, MapPin, Tag } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Button } from "@/components/ui/button";
 
 interface CalendarEvent {
   date: string;
@@ -14,6 +16,7 @@ interface CalendarProps {
 
 export function Calendar({ dates }: CalendarProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
 
   // Calendar navigation
   const prevMonth = () => {
@@ -132,17 +135,48 @@ export function Calendar({ dates }: CalendarProps) {
                     </div>
                     <div className="space-y-1">
                       {events.map((event, eventIndex) => (
-                        <div 
-                          key={eventIndex}
-                          className={`text-xs p-1 rounded truncate ${
-                            event.type === 'assessment' ? 'bg-blue-100 text-blue-700' :
-                            event.type === 'class' ? 'bg-purple-100 text-purple-700' :
-                            'bg-gray-100 text-gray-700'
-                          }`}
-                          title={`${event.title}${event.location ? ` - ${event.location}` : ''}`}
-                        >
-                          {event.title}
-                        </div>
+                        <Popover key={eventIndex}>
+                          <PopoverTrigger asChild>
+                            <div 
+                              className={`text-xs p-1 rounded truncate cursor-pointer hover:opacity-90 transition-opacity ${
+                                event.type === 'assessment' ? 'bg-blue-100 text-blue-700' :
+                                event.type === 'class' ? 'bg-purple-100 text-purple-700' :
+                                'bg-gray-100 text-gray-700'
+                              }`}
+                              onClick={() => setSelectedEvent(event)}
+                            >
+                              {event.title}
+                            </div>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-80 p-4">
+                            <div className="space-y-3">
+                              <h3 className="font-semibold text-lg">{event.title}</h3>
+                              <div className="space-y-2">
+                                <div className="flex items-center gap-2 text-sm text-gray-600">
+                                  <CalendarIcon className="w-4 h-4" />
+                                  <span>
+                                    {new Date(event.date).toLocaleDateString('en-US', {
+                                      weekday: 'long',
+                                      month: 'long',
+                                      day: 'numeric',
+                                      year: 'numeric'
+                                    })}
+                                  </span>
+                                </div>
+                                {event.location && (
+                                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                                    <MapPin className="w-4 h-4" />
+                                    <span>{event.location}</span>
+                                  </div>
+                                )}
+                                <div className="flex items-center gap-2 text-sm text-gray-600">
+                                  <Tag className="w-4 h-4" />
+                                  <span className="capitalize">{event.type}</span>
+                                </div>
+                              </div>
+                            </div>
+                          </PopoverContent>
+                        </Popover>
                       ))}
                     </div>
                   </>
