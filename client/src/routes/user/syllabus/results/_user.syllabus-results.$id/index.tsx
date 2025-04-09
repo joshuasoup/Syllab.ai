@@ -274,6 +274,8 @@ export default function SyllabusResults() {
           date,
           title: assessment.name,
           type: 'assessment',
+          weight: assessment.weight?.[0],
+          description: assessment.description
         }))
       ),
     // Important deadlines
@@ -355,13 +357,71 @@ export default function SyllabusResults() {
 
         return classEvents;
       }),
+    // User-added events
+    ...(data.events || []).map(event => ({
+      date: event.date,
+      title: event.title,
+      type: event.type,
+      location: event.location,
+      id: event.id
+    }))
   ];
+
+  console.log('All events:', allDates);
+  console.log('User events:', data.events);
 
   // Sort dates chronologically
   allDates.sort((a, b) => {
     if (!a.date || !b.date) return 0;
-    return new Date(a.date).getTime() - new Date(b.date).getTime();
+    const dateA = new Date(a.date + 'T12:00:00');
+    const dateB = new Date(b.date + 'T12:00:00');
+    return dateA.getTime() - dateB.getTime();
   });
+
+  // Group events by status and sort within each group
+  const groupedEvents = allDates
+    .filter(event => event.type === 'assessment' || event.type === 'deadline')
+    .reduce((groups, event) => {
+      const eventDate = new Date(event.date + 'T12:00:00');
+      const today = new Date();
+      today.setHours(12, 0, 0, 0);
+      
+      const isToday = eventDate.getTime() === today.getTime();
+      const isUpcoming = !isNaN(eventDate.getTime()) && eventDate > today;
+      const isPast = !isNaN(eventDate.getTime()) && eventDate < today;
+      const completed = isTaskCompleted(`${event.title}-${event.date}`);
+      
+      const status = completed
+        ? 'completed'
+        : isToday
+        ? 'today'
+        : isPast
+        ? 'past'
+        : 'upcoming';
+      
+      if (!groups[status]) {
+        groups[status] = [];
+      }
+      groups[status].push(event);
+      return groups;
+    }, {} as Record<string, typeof allDates>);
+
+  // Sort each group by date
+  Object.keys(groupedEvents).forEach(status => {
+    groupedEvents[status].sort((a, b) => {
+      const dateA = new Date(a.date + 'T12:00:00');
+      const dateB = new Date(b.date + 'T12:00:00');
+      return dateA.getTime() - dateB.getTime();
+    });
+  });
+
+  // Flatten the groups in the desired order
+  const sortedEvents = [
+    ...(groupedEvents['today'] || []),
+    ...(groupedEvents['upcoming'] || []),
+    ...(groupedEvents['past'] || []),
+    ...(groupedEvents['completed'] || [])
+  ];
 
   const handleDownloadCalendar = () => {
     if (!syllabus?.icsContent) {
@@ -586,176 +646,178 @@ export default function SyllabusResults() {
             <span>Assessments &amp; Deadlines</span>
           </h2>
           <div className="bg-gray-50 p-4 rounded-lg max-h-[500px] overflow-y-auto">
-            {allDates.filter(
-              (event) =>
-                event.type === 'assessment' || event.type === 'deadline'
-            ).length > 0 ? (
+            {sortedEvents.length > 0 ? (
               <div className="space-y-2">
                 {/* All tasks (both active and completed), maintaining original order */}
-                {allDates
-                  .filter(
-                    (event) =>
-                      event.type === 'assessment' || event.type === 'deadline'
-                  )
-                  .map((event, index) => {
-                    const eventDate = new Date(event.date);
-                    const isUpcoming =
-                      !isNaN(eventDate.getTime()) && eventDate >= new Date();
-                    const isPast =
-                      !isNaN(eventDate.getTime()) && eventDate < new Date();
-                    const formattedDate = !isNaN(eventDate.getTime())
-                      ? eventDate.toLocaleDateString('en-US', {
-                          weekday: 'short',
-                          month: 'short',
-                          day: 'numeric',
-                        })
-                      : 'No date';
+                {sortedEvents.map((event, index) => {
+                  const eventDate = new Date(event.date + 'T12:00:00');
+                  const today = new Date();
+                  today.setHours(12, 0, 0, 0); // Set to noon to match eventDate
+                  
+                  const isToday = eventDate.getTime() === today.getTime();
+                  const isUpcoming =
+                    !isNaN(eventDate.getTime()) && eventDate > today;
+                  const isPast =
+                    !isNaN(eventDate.getTime()) && eventDate < today;
+                  const formattedDate = !isNaN(eventDate.getTime())
+                    ? eventDate.toLocaleDateString('en-US', {
+                        weekday: 'short',
+                        month: 'short',
+                        day: 'numeric',
+                      })
+                    : 'No date';
 
-                    // Find matching assessment in the assessments array to get weight
-                    const assessmentData = data.assessments?.find(
-                      (a) =>
-                        a.name &&
-                        a.name.toLowerCase() === event.title.toLowerCase()
-                    );
+                  // Find matching assessment in the assessments array to get weight
+                  const assessmentData = data.assessments?.find(
+                    (a) =>
+                      a.name &&
+                      a.name.toLowerCase() === event.title.toLowerCase()
+                  );
 
-                    const weight = assessmentData?.weight?.[0];
-                    const hasWeight = weight !== undefined;
+                  const weight = assessmentData?.weight?.[0];
+                  const hasWeight = weight !== undefined;
 
-                    const taskId = `${event.title}-${event.date}`;
-                    const completed = isTaskCompleted(taskId);
+                  const taskId = `${event.title}-${event.date}`;
+                  const completed = isTaskCompleted(taskId);
 
-                    // Default to upcoming for items with invalid dates
-                    const status = completed
-                      ? 'completed'
-                      : isPast
-                      ? 'past'
-                      : 'upcoming'; // Default to upcoming for invalid dates too
+                  // Default to upcoming for items with invalid dates
+                  const status = completed
+                    ? 'completed'
+                    : isToday
+                    ? 'today'
+                    : isPast
+                    ? 'past'
+                    : 'upcoming';
 
-                    return (
-                      <div
-                        key={index}
-                        className={`flex flex-col p-3 rounded-lg ${
-                          status === 'completed'
-                            ? 'bg-gray-50 border border-gray-200 opacity-75'
-                            : status === 'past'
-                            ? 'bg-gray-50 border border-gray-200'
-                            : `bg-${bgColor}/5 border border-${bgColor}/20`
-                        }`}
-                      >
-                        <div className="flex items-center justify-between mb-1">
-                          <div className="flex items-center gap-2">
-                            <div
-                              className={`px-2 py-1 text-xs font-medium rounded-full ${
-                                status === 'completed'
-                                  ? `bg-${bgColor}/20 text-${bgColor}`
-                                  : status === 'past'
-                                  ? 'bg-gray-200 text-gray-700'
-                                  : `bg-${bgColor}/20 text-${bgColor}`
-                              }`}
-                              style={{
-                                backgroundColor:
-                                  status === 'completed' ||
-                                  status === 'upcoming'
-                                    ? `${bgColor}20`
-                                    : '',
-                              }}
-                            >
-                              {status === 'completed'
-                                ? 'Completed'
+                  return (
+                    <div
+                      key={index}
+                      className={`flex flex-col p-3 rounded-lg ${
+                        status === 'completed'
+                          ? 'bg-gray-50 border border-gray-200 opacity-75'
+                          : status === 'past'
+                          ? 'bg-gray-50 border border-gray-200'
+                          : `bg-${bgColor}/5 border border-${bgColor}/20`
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-1">
+                        <div className="flex items-center gap-2">
+                          <div
+                            className={`px-2 py-1 text-xs font-medium rounded-full ${
+                              status === 'completed'
+                                ? `bg-${bgColor}/20 text-${bgColor}`
+                                : status === 'today'
+                                ? 'bg-yellow-100 text-yellow-800'
                                 : status === 'past'
-                                ? 'Past'
-                                : 'Upcoming'}
-                            </div>
-                            <div className="text-xs text-gray-500">
-                              {event.type === 'assessment'
-                                ? 'Assessment'
-                                : 'Deadline'}
-                            </div>
+                                ? 'bg-gray-200 text-gray-700'
+                                : `bg-${bgColor}/20 text-${bgColor}`
+                            }`}
+                            style={{
+                              backgroundColor:
+                                status === 'completed' ||
+                                status === 'upcoming'
+                                  ? `${bgColor}20`
+                                  : '',
+                            }}
+                          >
+                            {status === 'completed'
+                              ? 'Completed'
+                              : status === 'today'
+                              ? 'Due Today'
+                              : status === 'past'
+                              ? 'Past'
+                              : 'Upcoming'}
                           </div>
-                          <div className="text-sm font-medium text-gray-600">
-                            {formattedDate}
+                          <div className="text-xs text-gray-500">
+                            {event.type === 'assessment'
+                              ? 'Assessment'
+                              : 'Deadline'}
                           </div>
                         </div>
-
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-start gap-2">
-                            <button
-                              onClick={() =>
-                                toggleTaskCompletion(
-                                  taskId,
-                                  event.title,
-                                  event.date
-                                )
-                              }
-                              className="mt-0.5 flex-shrink-0 focus:outline-none"
-                            >
-                              {completed ? (
-                                <CheckCircle
-                                  className="w-5 h-5"
-                                  style={{ color: bgColor }}
-                                />
-                              ) : (
-                                <Circle
-                                  className="w-5 h-5 text-gray-400"
-                                  style={{
-                                    color: 'rgba(156, 163, 175, 1)',
-                                  }}
-                                  onMouseOver={(e) =>
-                                    (e.currentTarget.style.color = bgColor)
-                                  }
-                                  onMouseOut={(e) =>
-                                    (e.currentTarget.style.color =
-                                      'rgba(156, 163, 175, 1)')
-                                  }
-                                />
-                              )}
-                            </button>
-                            <div>
-                              <div
-                                className={`font-semibold ${
-                                  completed ? 'line-through' : 'text-gray-900'
-                                }`}
-                                style={{ color: completed ? bgColor : '' }}
-                              >
-                                {event.title}
-                              </div>
-                              {hasWeight && (
-                                <div
-                                  className={`text-xs mt-1 flex items-center ${
-                                    completed
-                                      ? 'text-gray-400'
-                                      : 'text-gray-600'
-                                  }`}
-                                >
-                                  <div className="w-20 h-1.5 bg-gray-200 rounded-full overflow-hidden mr-2">
-                                    <div
-                                      className="h-full rounded-full"
-                                      style={{
-                                        backgroundColor: completed
-                                          ? `${bgColor}80`
-                                          : bgColor,
-                                        width: `${Math.min(weight, 100)}%`,
-                                      }}
-                                    ></div>
-                                  </div>
-                                  <span>Worth: {weight}</span>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                          {assessmentData?.description && (
-                            <div
-                              className={`text-xs italic max-w-[250px] truncate ${
-                                completed ? 'text-gray-400' : 'text-gray-500'
-                              }`}
-                            >
-                              {assessmentData.description}
-                            </div>
-                          )}
+                        <div className="text-sm font-medium text-gray-600">
+                          {formattedDate}
                         </div>
                       </div>
-                    );
-                  })}
+
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-start gap-2">
+                          <button
+                            onClick={() =>
+                              toggleTaskCompletion(
+                                taskId,
+                                event.title,
+                                event.date
+                              )
+                            }
+                            className="mt-0.5 flex-shrink-0 focus:outline-none"
+                          >
+                            {completed ? (
+                              <CheckCircle
+                                className="w-5 h-5"
+                                style={{ color: bgColor }}
+                              />
+                            ) : (
+                              <Circle
+                                className="w-5 h-5 text-gray-400"
+                                style={{
+                                  color: 'rgba(156, 163, 175, 1)',
+                                }}
+                                onMouseOver={(e) =>
+                                  (e.currentTarget.style.color = bgColor)
+                                }
+                                onMouseOut={(e) =>
+                                  (e.currentTarget.style.color =
+                                    'rgba(156, 163, 175, 1)')
+                                }
+                              />
+                            )}
+                          </button>
+                          <div>
+                            <div
+                              className={`font-semibold ${
+                                completed ? 'line-through' : 'text-gray-900'
+                              }`}
+                              style={{ color: completed ? bgColor : '' }}
+                            >
+                              {event.title}
+                            </div>
+                            {hasWeight && (
+                              <div
+                                className={`text-xs mt-1 flex items-center ${
+                                  completed
+                                    ? 'text-gray-400'
+                                    : 'text-gray-600'
+                                }`}
+                              >
+                                <div className="w-20 h-1.5 bg-gray-200 rounded-full overflow-hidden mr-2">
+                                  <div
+                                    className="h-full rounded-full"
+                                    style={{
+                                      backgroundColor: completed
+                                        ? `${bgColor}80`
+                                        : bgColor,
+                                      width: `${Math.min(weight, 100)}%`,
+                                    }}
+                                  ></div>
+                                </div>
+                                <span>Worth: {weight}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        {assessmentData?.description && (
+                          <div
+                            className={`text-xs italic max-w-[250px] truncate ${
+                              completed ? 'text-gray-400' : 'text-gray-500'
+                            }`}
+                          >
+                            {assessmentData.description}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             ) : (
               <div className="text-center text-gray-500">
