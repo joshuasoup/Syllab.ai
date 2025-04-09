@@ -470,7 +470,7 @@ export default function SyllabusResults() {
         <div className="lg:col-span-1 flex flex-col gap-6">
           {/* Calendar Widget - Google Calendar style */}
           <Link
-            to={`/user/syllabus/${id}/calendar`}
+            to={`/user/syllabus-results/${id}/calendar`}
             className="rounded-xl border-2 border-gray-200 shadow-sm hover:shadow transition-all block group"
             state={{ from: location.pathname }}
           >

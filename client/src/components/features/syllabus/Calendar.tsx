@@ -78,6 +78,8 @@ export function Calendar({ dates }: CalendarProps) {
         <div className="flex items-center gap-3">
           <div className="relative">
             <input 
+              id="calendar-search"
+              name="calendar-search"
               type="text" 
               placeholder="Search events" 
               className="pl-8 pr-3 py-1.5 rounded-md border border-gray-200 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"

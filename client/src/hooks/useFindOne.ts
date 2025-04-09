@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 interface UseFindOneResult<T> {
   data: T | null;
@@ -11,6 +11,8 @@ interface UseFindOneOptions {
   maxRetries?: number;
   retryDelay?: number;
   dependencies?: any[];
+  cacheTime?: number;
+  staleTime?: number;
 }
 
 export function useFindOne<T>(
@@ -21,6 +23,15 @@ export function useFindOne<T>(
   const [error, setError] = useState<Error | null>(null);
   const [fetching, setFetching] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
+  
+  // Cache management
+  const cache = useRef<{
+    data: T | null;
+    timestamp: number;
+  }>({
+    data: null,
+    timestamp: 0
+  });
 
   useEffect(() => {
     // Don't fetch if disabled
@@ -29,15 +40,35 @@ export function useFindOne<T>(
     }
 
     let timeoutId: NodeJS.Timeout;
+    let mounted = true;
 
     const fetchData = async () => {
+      // Check cache first
+      const now = Date.now();
+      const isStale = now - cache.current.timestamp > (options.staleTime || 0);
+      const isExpired = now - cache.current.timestamp > (options.cacheTime || 0);
+
+      if (cache.current.data && !isStale && !isExpired) {
+        setData(cache.current.data);
+        return;
+      }
+
       setFetching(true);
       try {
         const result = await fetchFn();
-        setData(result);
-        setError(null);
-        setRetryCount(0); // Reset retry count on success
+        if (mounted) {
+          setData(result);
+          setError(null);
+          setRetryCount(0);
+          // Update cache
+          cache.current = {
+            data: result,
+            timestamp: now
+          };
+        }
       } catch (err) {
+        if (!mounted) return;
+        
         const error = err instanceof Error ? err : new Error('An error occurred');
         setError(error);
         
@@ -50,18 +81,23 @@ export function useFindOne<T>(
         if (retryCount < (options.maxRetries || 3)) {
           const delay = (options.retryDelay || 1000) * Math.pow(2, retryCount);
           timeoutId = setTimeout(() => {
-            setRetryCount(prev => prev + 1);
+            if (mounted) {
+              setRetryCount(prev => prev + 1);
+            }
           }, delay);
         }
       } finally {
-        setFetching(false);
+        if (mounted) {
+          setFetching(false);
+        }
       }
     };
 
     fetchData();
 
-    // Cleanup function to clear any pending timeouts
+    // Cleanup function
     return () => {
+      mounted = false;
       if (timeoutId) {
         clearTimeout(timeoutId);
       }
