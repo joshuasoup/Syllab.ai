@@ -12,44 +12,19 @@ import { api } from '@/services/api';
 import { useFindOne } from '@/hooks/useFindOne';
 import type { Syllabus, ICSEvent } from '@/types/syllabus';
 import { toast } from 'sonner';
-import { filterEmptyEntries, isEmpty } from './SyllabusHelpers';
-import {
-  toTitleCase,
-  linkify,
-  TimelineItem,
-  extractDateFromText,
-} from '@/components/features/syllabus/SubComponents';
-import { Calendar } from '@/components/features/syllabus/Calendar';
+import { extractDateFromText } from '@/components/features/syllabus/SubComponents';
 import { CourseInfo } from '@/components/features/syllabus/CourseInfo';
-import { GradeBreakdown } from '@/components/features/syllabus/GradeBreakdown';
 import {
   Calendar as CalendarIcon,
   Trash2,
   MessageCircle,
   ClipboardList,
-  Star,
-  Clock,
   ChevronRight,
-  Share2,
-  ExternalLink,
-  Twitter,
   Palette,
-  Download,
-  Check,
   CheckCircle,
   Circle,
-  Calculator,
 } from 'lucide-react';
-import type { AuthOutletContext } from '@/routes/_user';
-import { useAction } from '@/hooks/useAction';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import type { AuthOutletContext } from "@/routes/layout/_user";
 import {
   Popover,
   PopoverContent,
@@ -57,9 +32,6 @@ import {
 } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
 import { DeleteSyllabusButton } from '@/components/features/syllabus/DeleteSyllabusButton';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Input } from '@/components/ui/input';
 import { GradeCalculator } from '@/components/features/syllabus/GradeCalculator';
 
 // Define an interface for completed tasks
@@ -76,16 +48,6 @@ export default function SyllabusResults() {
   const location = useLocation();
 
   // State declarations - all grouped together at the top
-  const [activeTab, setActiveTab] = useState<string>('calendar');
-  const [showGradeForm, setShowGradeForm] = useState(false);
-  const [grades, setGrades] = useState({
-    assignment1: '',
-    assignment2: '',
-    assignment3: '',
-  });
-  const [averageGrade, setAverageGrade] = useState<number | null>(null);
-
-  // State for completed tasks
   const [completedTasks, setCompletedTasks] = useState<CompletedTask[]>(() => {
     if (!id) return [];
 
@@ -300,14 +262,6 @@ export default function SyllabusResults() {
   const { highlights } = syllabus;
   const data = highlights || {};
 
-  // Debug logging
-  console.log('Syllabus ID:', id);
-  console.log('Syllabus Data:', syllabus);
-  console.log('Highlights:', highlights);
-  console.log('Course Info:', data.course_info);
-  console.log('Full Data:', data);
-  console.log('Assessments:', data.assessments);
-
   // Combine all dates for the calendar
   const allDates = [
     // Assessment dates
@@ -425,66 +379,6 @@ export default function SyllabusResults() {
     window.URL.revokeObjectURL(url);
     document.body.removeChild(a);
     toast.success('Calendar downloaded successfully');
-  };
-
-  const handleGradeChange = (assignment: string, value: string) => {
-    // Only allow numbers and decimal points
-    if (/^\d*\.?\d*$/.test(value)) {
-      setGrades((prev) => ({
-        ...prev,
-        [assignment]: value,
-      }));
-    }
-  };
-
-  const calculateAverage = (grades: { [key: string]: string }) => {
-    const validGrades = Object.values(grades)
-      .map((grade) => parseFloat(grade))
-      .filter((grade) => !isNaN(grade));
-
-    if (validGrades.length === 0) return null;
-
-    const sum = validGrades.reduce((acc, grade) => acc + grade, 0);
-    return sum / validGrades.length;
-  };
-
-  const getGradeColor = (grade: number) => {
-    if (grade >= 90) return 'text-green-600';
-    if (grade >= 80) return 'text-blue-600';
-    if (grade >= 70) return 'text-yellow-600';
-    if (grade >= 60) return 'text-orange-600';
-    return 'text-red-600';
-  };
-
-  const getGradeLetter = (grade: number) => {
-    if (grade >= 90) return 'A';
-    if (grade >= 80) return 'B';
-    if (grade >= 70) return 'C';
-    if (grade >= 60) return 'D';
-    return 'F';
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    // Validate grades
-    const isValid = Object.values(grades).every((grade) => {
-      const num = parseFloat(grade);
-      return !isNaN(num) && num >= 0 && num <= 100;
-    });
-
-    if (!isValid) {
-      toast.error('Please enter valid grades between 0 and 100');
-      return;
-    }
-
-    // Show success message
-    toast.success('Grades submitted successfully!');
-    setShowGradeForm(false);
-    setGrades({
-      assignment1: '',
-      assignment2: '',
-      assignment3: '',
-    });
   };
 
   return (

@@ -6,7 +6,7 @@ import KanbanBoard from "@/components/features/syllabus/KanbanBoard";
 import { Loader2, ArrowLeft } from "lucide-react";
 import type { Syllabus, ICSEvent } from "@/types/syllabus";
 import { extractDateFromText } from "@/components/features/syllabus/SubComponents";
-import type { AuthOutletContext } from "@/routes/_user";
+import type { AuthOutletContext } from "@/routes/layout/_user";
 import { Button } from "@/components/ui/button";
 
 export default function CalendarRoute() {

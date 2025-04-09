@@ -7,9 +7,9 @@ import SignUp from './routes/auth/sign-up';
 import VerifyEmail from './routes/auth/verify-email';
 import SyllabusUpload from './routes/user/syllabus/upload';
 import RenameSyllabus from './routes/user/syllabus/rename';
-import UserLayout, { loader as userLoader } from './routes/_user';
-import AuthLayout from './routes/_auth';
-import SyllabusResults from './routes/user/syllabus/results/_user.syllabus-results.$id';
+import UserLayout, { loader as userLoader } from './routes/layout/_user';
+import AuthLayout from './routes/layout/_auth';
+import SyllabusResults from './routes/user/syllabus/results/_user.syllabus-results.$id/index';
 import CalendarRoute from './routes/user/syllabus/results/_user.syllabus-results.$id/calendar';
 import AuthCallback from './routes/auth/callback';
 import Dashboard from './routes/user/dashboard';
@@ -57,7 +57,7 @@ export const router = createBrowserRouter([
         loader: userLoader,
         children: [
           {
-            path: 'syllabus/upload',
+            path: 'syllabus-upload',
             element: <SyllabusUpload />,
           },
           {

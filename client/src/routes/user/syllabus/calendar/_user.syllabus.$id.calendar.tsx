@@ -8,7 +8,7 @@ import { ArrowLeft, CalendarIcon, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { extractDateFromText } from '@/components/features/syllabus/SubComponents';
-import type { AuthOutletContext } from '@/routes/_user';
+import type { AuthOutletContext } from '@/routes/layout/_user';
 
 export default function SyllabusCalendarPage() {
   const { id } = useParams();
