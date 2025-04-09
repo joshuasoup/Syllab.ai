@@ -45,6 +45,10 @@ router.patch('/:id', auth,
   syllabusController.updateSyllabus as express.RequestHandler
 );
 
+router.post('/:id/events', auth, 
+  syllabusController.addEvent as express.RequestHandler
+);
+
 export default router;
 
 

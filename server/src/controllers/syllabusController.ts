@@ -192,7 +192,16 @@ export const getSyllabus = async (req: AuthenticatedRequest, res: Response) => {
     console.log('[getSyllabus] Fetching syllabus from database');
     const { data, error } = await userSupabase
       .from('syllabi')
-      .select('*')
+      .select(`
+        *,
+        syllabus_events (
+          id,
+          title,
+          type,
+          location,
+          date
+        )
+      `)
       .eq('id', req.params.id)
       .eq('user_id', req.user.id)
       .single();
@@ -205,7 +214,8 @@ export const getSyllabus = async (req: AuthenticatedRequest, res: Response) => {
     console.log('[getSyllabus] Syllabus found:', {
       id: data.id,
       title: data.title,
-      hasFile: !!data.file_url
+      hasFile: !!data.file_url,
+      eventCount: data.syllabus_events?.length || 0
     });
 
     // Transform the data to match the client's expected structure
@@ -214,7 +224,17 @@ export const getSyllabus = async (req: AuthenticatedRequest, res: Response) => {
       file: data.file_url ? {
         url: data.file_url
       } : null,
-      highlights: data.highlights || {},
+      highlights: {
+        ...data.highlights,
+        // Add events to highlights with their IDs
+        events: data.syllabus_events?.map(event => ({
+          id: event.id,
+          title: event.title,
+          type: event.type,
+          location: event.location,
+          date: event.date
+        })) || []
+      },
       processed: data.processed || false,
       icsContent: data.ics_content || null
     };
@@ -364,6 +384,77 @@ export const updateSyllabus = async (req: AuthenticatedRequest, res: Response) =
     res.json(transformedData);
   } catch (error: any) {
     console.error('[updateSyllabus] Error:', error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// Add event to syllabus
+export const addEvent = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const syllabusId = req.params.id;
+    const userId = req.user.id;
+    const { title, type, location, date } = req.body;
+
+    // Validate required fields
+    if (!title || !type || !date) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    // First verify the syllabus belongs to the user
+    const { data: syllabus, error: syllabusError } = await supabase
+      .from('syllabi')
+      .select('id')
+      .eq('id', syllabusId)
+      .eq('user_id', userId)
+      .single();
+
+    if (syllabusError || !syllabus) {
+      return res.status(404).json({ error: 'Syllabus not found' });
+    }
+
+    // Add the event to the syllabus_events table
+    const { data: event, error: eventError } = await supabase
+      .from('syllabus_events')
+      .insert({
+        syllabus_id: syllabusId,
+        user_id: userId,
+        title,
+        type,
+        location,
+        date
+      })
+      .select()
+      .single();
+
+    if (eventError) {
+      console.error('Error adding event:', eventError);
+      return res.status(500).json({ error: 'Failed to add event' });
+    }
+
+    // Get the updated syllabus with all events
+    const { data: updatedSyllabus, error: fetchError } = await supabase
+      .from('syllabi')
+      .select(`
+        *,
+        syllabus_events (
+          id,
+          title,
+          type,
+          location,
+          date
+        )
+      `)
+      .eq('id', syllabusId)
+      .single();
+
+    if (fetchError) {
+      console.error('Error fetching updated syllabus:', fetchError);
+      return res.status(500).json({ error: 'Failed to fetch updated syllabus' });
+    }
+
+    res.json(updatedSyllabus);
+  } catch (error: any) {
+    console.error('Add event error:', error);
     res.status(500).json({ error: error.message });
   }
 };

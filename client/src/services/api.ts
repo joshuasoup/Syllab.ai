@@ -183,6 +183,36 @@ export const api = {
         },
       });
     },
+    addEvent: (id: string, event: { title: string; type: string; location?: string; date: string }) => {
+      console.log('[API] Adding event to syllabus:', {
+        id,
+        event,
+        method: 'POST'
+      });
+      return fetchApi<Syllabus>(`/syllabi/${id}/events`, {
+        method: 'POST',
+        body: JSON.stringify(event),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+      });
+    },
+    async deleteEvent(syllabusId: string, eventId: string) {
+      const response = await fetch(`${BASE_URL}/syllabi/${syllabusId}/events/${eventId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('sb-access-token')}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete event');
+      }
+
+      return response.json();
+    },
   },
   chat: {
     sendMessage: (syllabusId: string, message: string) =>
