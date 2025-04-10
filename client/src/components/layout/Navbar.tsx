@@ -86,7 +86,7 @@ export const Navbar = () => {
     <div className="fixed top-0 left-0 w-full z-50 px-4 py-3 mt-1">
       {/* Detached navbar with shadow and border */}
       <div className="max-w-[800px] mx-auto bg-white rounded-3xl shadow-md border border-gray-200 px-6">
-        <div className="flex justify-between items-center">
+        <div className="flex justify-between items-center py-2 min-h-14 max-h-14">
           <Link
             to="/dashboard"
             className="text-3xl font-semibold flex items-center gap-3"
@@ -97,14 +97,14 @@ export const Navbar = () => {
             </span>
           </Link>
           {user ? (
-            <div className="scale-110 mr-3">
+            <div className="flex items-center">
               <UserMenu />
             </div>
           ) : (
             <Button
               variant="ghost"
               size="lg"
-              className="w-16 h-16 p-0 flex items-center justify-center transition-all border border-transparent mr-3"
+              className="w-16 h-16 p-0 flex items-center justify-center transition-all border border-transparent"
               asChild
             >
               <Link to="auth/sign-up">

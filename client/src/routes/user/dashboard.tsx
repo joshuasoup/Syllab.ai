@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { MoreVertical, PlusCircle, Trash2, Pencil } from 'lucide-react';
+import { MoreVertical, PlusCircle, Trash2, Pencil, Upload } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,6 +17,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { motion } from 'framer-motion';
+import { Link } from 'react-router-dom';
 
 interface Task {
   id: string;
@@ -120,6 +121,16 @@ export default function Dashboard() {
 
   return (
     <div className="w-[1728px] h-[1117px] relative bg-white shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] overflow-hidden">
+      {/* Temporary Upload Syllabus Button */}
+      <div className="absolute top-0 left-0 z-10">
+        <Link to="/user/syllabus-upload">
+          <Button className="bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2">
+            <Upload className="h-5 w-5" />
+            Upload Syllabus
+          </Button>
+        </Link>
+      </div>
+
       {/* Decorative elements */}
       <div className="w-[872px] h-[874px] left-[1250px] top-[695px] absolute bg-[radial-gradient(ellipse_50.00%_50.00%_at_50.00%_50.00%,_rgba(37,_99,_235,_0.61)_0%,_rgba(255,_255,_255,_0.61)_100%)] rounded-full"></div>
       <div className="w-[1207px] h-[1221px] left-[-785px] top-[-661px] absolute bg-[radial-gradient(ellipse_50.00%_50.00%_at_50.00%_50.00%,_#2563EB_0%,_rgba(255,_255,_255,_0.61)_100%)] rounded-full"></div>

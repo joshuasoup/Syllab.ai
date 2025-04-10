@@ -65,6 +65,13 @@ export default function SyllabusResults() {
     return savedColor || '#3b82f6'; // Return saved color or default blue
   });
 
+  // Define a type for the schedule
+type DaySchedule = {
+  day: string;
+  startTime: string;
+  endTime: string;
+};
+
   // Update color when syllabus ID changes
   useEffect(() => {
     if (id) {
@@ -309,13 +316,21 @@ export default function SyllabusResults() {
       .flatMap((event: ICSEvent) => {
         // Parse the recurrence string to get days and times
         const recurrencePattern = event.recurrence.replace('Every ', '');
-        const schedules = recurrencePattern
-          .split(', ')
-          .map((schedule: string) => {
-            const [day, time] = schedule.split(' ');
-            const [startTime, endTime] = time.split('-');
+       const schedules = (recurrencePattern?.split(', ') || []).map((schedule: string) => {
+            if (!schedule) return null;
+            const parts = schedule.split(' ');
+            if (parts.length < 2) return null;
+            
+            const [day, time] = parts;
+            if (!time) return null;
+            
+            const timeParts = time.split('-');
+            const startTime = timeParts[0];
+            const endTime = timeParts[1];
+            
             return { day, startTime, endTime };
-          });
+        })
+        .filter((item): item is DaySchedule => item !== null); // Type guard to remove nulls
 
         // Get the current month's dates for these days
         const currentDate = new Date();
