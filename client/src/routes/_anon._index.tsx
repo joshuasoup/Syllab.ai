@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { Navbar } from '@/components/layout/Navbar';
 import { LogoMarquee } from '@/components/features/LogoMarquee';
 import { getSession } from '@/lib/supabase';
-import '../styles/landing-page.css';
+import '@styles/landing-page.css';
 import { SplineWithPlaceholder } from '@/components/features/SplineWithPlaceholder';
 
 // A full page background wrapper with position:relative
