@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { useFindOne } from "@/hooks/useFindOne";
 import { api } from "@/services/api";
 import ReactMarkdown from "react-markdown";
 

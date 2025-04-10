@@ -136,7 +136,7 @@ export default function SyllabusCalendarPage() {
         // Parse the recurrence string to get days and times
         const recurrencePattern = event.recurrence.replace('Every ', '');
         const schedules = recurrencePattern
-          .split(', ')
+          .split(', ') 
           .map((schedule: string) => {
             const [day, time] = schedule.split(' ');
             const [startTime, endTime] = time.split('-');
