@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import './LogoMarquee.css';
+import '@styles/LogoMarquee.css';
 
 const logoUrls = [
   {

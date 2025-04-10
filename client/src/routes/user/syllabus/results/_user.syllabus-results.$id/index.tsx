@@ -33,6 +33,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { DeleteSyllabusButton } from '@/components/features/syllabus/DeleteSyllabusButton';
 import { GradeCalculator } from '@/components/features/syllabus/GradeCalculator';
+import ChatbotDialog from '@/components/features/chat/ChatbotDialog';
 
 // Define an interface for completed tasks
 interface CompletedTask {
@@ -46,6 +47,7 @@ export default function SyllabusResults() {
   const navigate = useNavigate();
   const { user } = useOutletContext<AuthOutletContext>();
   const location = useLocation();
+  const [chatOpen, setChatOpen] = useState(false);
 
   // State declarations - all grouped together at the top
   const [completedTasks, setCompletedTasks] = useState<CompletedTask[]>(() => {
@@ -55,6 +57,19 @@ export default function SyllabusResults() {
     const savedTasks = localStorage.getItem(`syllabus_completed_tasks_${id}`);
     return savedTasks ? JSON.parse(savedTasks) : [];
   });
+
+  // Add keyboard shortcut for opening chatbot with cmd+k
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setChatOpen(true);
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   // Initialize bgColor state with loading from localStorage
   const [bgColor, setBgColor] = useState(() => {
@@ -488,10 +503,22 @@ type DaySchedule = {
               <Trash2 className="w-3 h-3 flex-shrink-0 text-red-500 mr-1" />
               <span className="font-medium text-gray-900">Delete</span>
             </DeleteSyllabusButton>
-            <div className="flex items-center gap-1 bg-white/70 px-2 py-1.5 rounded-full cursor-pointer hover:bg-white/90 transition-colors whitespace-nowrap text-xs">
+            {/* Replace Chat button with ChatbotDialog trigger */}
+            <div 
+              className="flex items-center gap-1 bg-white/70 px-2 py-1.5 rounded-full cursor-pointer hover:bg-white/90 transition-colors whitespace-nowrap text-xs"
+              onClick={() => setChatOpen(true)}
+            >
               <MessageCircle className="w-3 h-3 flex-shrink-0 text-purple-500" />
               <span className="font-medium text-gray-900">Chat</span>
             </div>
+            
+            {/* Add ChatbotDialog component */}
+            <ChatbotDialog 
+              syllabusId={id!}
+              open={chatOpen}
+              onOpenChange={setChatOpen}
+              trigger={null}
+            />
           </div>
         </div>
         <p className="text-white/90 font-medium text-sm mb-2">

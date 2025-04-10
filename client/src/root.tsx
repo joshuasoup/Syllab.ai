@@ -1,7 +1,7 @@
 import React from 'react';
 import { Outlet, redirect } from 'react-router-dom';
 import { Suspense } from 'react';
-import './app.css';
+import '@styles/app.css';
 import { api } from '@/services/api';
 import { User } from '@/types/user';
 import { getSession } from '@/lib/supabase';

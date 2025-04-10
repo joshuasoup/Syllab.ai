@@ -215,14 +215,17 @@ export const api = {
     },
   },
   chat: {
-    sendMessage: (syllabusId: string, message: string) =>
-      fetchApi<{ response: string }>(`/syllabi/${syllabusId}/chat`, {
-        method: 'POST',
-        body: JSON.stringify({ message }),
-      }).then(data => data.response),
-    getHistory: (syllabusId: string) =>
-      fetchApi<{ messages: Array<{ role: string; content: string }> }>(`/syllabi/${syllabusId}/chat`),
-  },
+  sendMessage: (syllabusId: string, message: string) =>
+    fetchApi<{ response: string }>(`/chat`, {
+      method: 'POST',
+      body: JSON.stringify({ 
+        syllabusId: syllabusId,
+        query: message  // Changed from 'message' to 'query'
+      }),
+    }).then(data => data.response),
+  getHistory: (syllabusId: string) =>
+    fetchApi<{ messages: Array<{ role: string; content: string }> }>(`/syllabi/${syllabusId}/chat`),
+},
   folders: {
     create: (name: string, color: string) => {
       console.log('Creating folder:', { name, color });
