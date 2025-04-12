@@ -55,7 +55,12 @@ export function CourseInfo({ instructors, classSchedule }: CourseInfoProps) {
         </h3>
         <div className="space-y-4">
           {instructors.map((instructor, index) => (
-            <div key={index} className="border-2 border-gray-50/5 rounded-lg p-4">
+            <div key={index} className={cn(
+              "rounded-lg p-4 transition-all duration-200",
+              isDarkMode 
+                ? "border-2 border-gray-50/5" 
+                : "border border-gray-200 shadow-md hover:shadow-lg bg-white"
+            )}>
               <div className="flex items-center justify-between">
                 <div className={cn(
                   "font-medium",
@@ -67,10 +72,10 @@ export function CourseInfo({ instructors, classSchedule }: CourseInfoProps) {
                     target="_blank" 
                     rel="noopener noreferrer"
                     className={cn(
-                      "text-sm flex items-center gap-1",
+                      "text-sm flex items-center gap-1 px-2 py-1 rounded-md transition-all duration-200",
                       isDarkMode 
                         ? "hover:opacity-80" 
-                        : "hover:opacity-80"
+                        : "hover:bg-gray-50"
                     )}
                     style={{ color: themeColor }}
                   >
@@ -81,19 +86,19 @@ export function CourseInfo({ instructors, classSchedule }: CourseInfoProps) {
               </div>
               {instructor.email && (
                 <div className={cn(
-                  "text-sm",
+                  "text-sm mt-1",
                   isDarkMode ? "text-gray-400" : "text-gray-500"
                 )}>{instructor.email}</div>
               )}
               {instructor.office && (
                 <div className={cn(
-                  "text-sm",
+                  "text-sm mt-1",
                   isDarkMode ? "text-white" : "text-gray-500"
                 )}>Office: {instructor.office}</div>
               )}
               {instructor.officeHours && (
                 <div className={cn(
-                  "text-sm",
+                  "text-sm mt-1",
                   isDarkMode ? "text-white" : "text-gray-500"
                 )}>Hours: {instructor.officeHours}</div>
               )}
@@ -109,16 +114,27 @@ export function CourseInfo({ instructors, classSchedule }: CourseInfoProps) {
         )}>
           Class Schedule
         </h3>
-        <div className="border-2 border-gray-50/5 rounded-lg p-4">
+        <div className={cn(
+          "rounded-lg p-4 transition-all duration-200",
+          isDarkMode 
+            ? "border-2 border-gray-50/5" 
+            : "border border-gray-200 shadow-md hover:shadow-lg bg-white"
+        )}>
           <div className="space-y-2">
             <div className="flex items-center gap-2">
-              <Clock className="h-4 w-4 text-gray-400" />
+              <Clock className={cn(
+                "h-4 w-4",
+                isDarkMode ? "text-gray-400" : "text-gray-500"
+              )} />
               <span className={cn(
                 isDarkMode ? "text-gray-400" : "text-gray-900"
               )}>{classSchedule?.meeting_days_times}</span>
             </div>
             <div className="flex items-center gap-2">
-              <MapPin className="h-7 w-7 text-gray-400" />
+              <MapPin className={cn(
+                "h-7 w-7",
+                isDarkMode ? "text-gray-400" : "text-gray-500"
+              )} />
               <span className={cn(
                 isDarkMode ? "text-gray-400" : "text-gray-500"
               )}>

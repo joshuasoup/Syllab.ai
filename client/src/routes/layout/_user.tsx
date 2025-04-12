@@ -907,15 +907,20 @@ const SideBar = ({
       )}>
         <div className="flex items-center px-3 py-2">
           <Link to="/dashboard" className="flex items-center gap-2">
-            <img 
-              src={isDarkMode ? logoWhiteUrl : logoUrl} 
-              alt="SyllabAI Logo" 
-              className="h-8 w-8" 
-            />
+            <div className={cn(
+              "transition-all duration-300",
+              isCollapsed ? "w-6 h-6" : "w-8 h-8"
+            )}>
+              <img 
+                src={isDarkMode ? logoWhiteUrl : logoUrl} 
+                alt="SyllabAI Logo" 
+                className="h-full w-full object-contain" 
+              />
+            </div>
             <span
               className={cn(
-                "text-xl font-bold whitespace-nowrap transition-all duration-300",
-                isCollapsed ? 'w-0 opacity-0' : 'w-auto opacity-100',
+                "text-xl font-bold transition-all duration-300",
+                isCollapsed ? 'w-0 opacity-0 hidden' : 'w-auto opacity-100',
                 isDarkMode ? "text-white" : "text-gray-900"
               )}
             >

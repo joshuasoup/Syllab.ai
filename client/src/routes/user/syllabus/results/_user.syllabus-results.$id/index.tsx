@@ -543,8 +543,8 @@ export default function SyllabusResults() {
             </div>
           </PopoverTrigger>
           <PopoverContent className={cn(
-            "w-64 p-3",
-            isDarkMode ? "bg-[#202020] border-gray-700" : "bg-white"
+            "w-64 p-3 rounded-xl shadow-lg border",
+            isDarkMode ? "bg-[#202020] border-gray-700" : "bg-white border-gray-200"
           )} side="top">
             <div className="space-y-3">
               <h4 className={cn(
@@ -586,7 +586,7 @@ export default function SyllabusResults() {
           <Link
             to={`/user/syllabus-results/${id}/calendar`}
             className={cn(
-              "rounded-xl shadow-sm hover:shadow transition-all block group",
+              "rounded-xl shadow-lg hover:shadow-xl transition-all block group border",
               isDarkMode ? "border-gray-700" : "border-gray-200"
             )}
             state={{ from: location.pathname }}
@@ -622,7 +622,7 @@ export default function SyllabusResults() {
 
               {/* Today's date - redesigned for better theme fit */}
               <div 
-                className="p-4 rounded-lg"
+                className="p-4 rounded-lg border"
                 style={{ 
                   backgroundColor: isDarkMode 
                     ? `${bgColor}33`  // 20% opacity in dark mode
@@ -692,7 +692,7 @@ export default function SyllabusResults() {
 
           {/* Course Info Section */}
           <div className={cn(
-            "rounded-lg p-4 shadow-sm",
+            "rounded-xl p-6 shadow-lg border",
             isDarkMode ? "bg-[#202020] border-gray-700" : "bg-white border-gray-200"
           )}>
             <h3 className={cn(
@@ -724,7 +724,7 @@ export default function SyllabusResults() {
 
         {/* Assessments List Widget */}
         <div className={cn(
-          "rounded-xl p-6 shadow-md hover:shadow-lg transition-shadow lg:col-span-2",
+          "rounded-xl p-6 shadow-lg border lg:col-span-2",
           isDarkMode ? "bg-[#202020] border-gray-700" : "bg-white border-gray-200"
         )}>
           <h2 className={cn(
@@ -787,8 +787,8 @@ export default function SyllabusResults() {
                     <div
                       key={index}
                       className={cn(
-                        "flex items-start gap-3 p-3 rounded-lg transition-colors",
-                        isDarkMode ? "hover:bg-gray-800/70" : "hover:bg-gray-100"
+                        "flex items-start gap-3 p-3 rounded-lg transition-colors border",
+                        isDarkMode ? "hover:bg-gray-800/70 border-gray-700" : "hover:bg-gray-100 border-gray-200"
                       )}
                     >
                       <button
