@@ -45,6 +45,7 @@ import type { User } from '@/types/user';
 import type { Syllabus } from '@/types/syllabus';
 import { getSession } from '@/lib/supabase';
 import logoUrl from '@images/syllabai-logo.png';
+import logoWhiteUrl from '@images/syllabus-logo-white.png';
 import { eventEmitter } from '@/utils/eventEmitter';
 import type { Folder } from '@/types/folder';
 import { DeleteSyllabusButton } from '@/components/features/syllabus/DeleteSyllabusButton';
@@ -70,6 +71,8 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { useSortable } from '@dnd-kit/sortable';
+import { useTheme } from '@/hooks/use-theme';
+import { cn } from '@/lib/utils';
 
 interface RootOutletContext {
   user?: User;
@@ -101,6 +104,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 const UserMenu = ({ user }: { user: User }) => {
   const [userMenuActive, setUserMenuActive] = useState(false);
   const navigate = useNavigate();
+  const { isDarkMode } = useTheme();
 
   const getInitials = () => {
     return (
@@ -182,25 +186,39 @@ const UserMenu = ({ user }: { user: User }) => {
   return (
     <DropdownMenu open={userMenuActive} onOpenChange={setUserMenuActive}>
       <DropdownMenuTrigger asChild>
-        <button className="flex items-center justify-between w-full gap-2 rounded py-2 px-2 hover:bg-gray-100 text-gray-800 transition-colors">
+        <button className={cn(
+          "flex items-center justify-between w-full gap-2 rounded py-2 px-2 transition-colors",
+          isDarkMode 
+            ? "hover:bg-gray-800/50 text-gray-200" 
+            : "hover:bg-gray-100 text-gray-800"
+        )}>
           <div className="flex items-center gap-2">
             <Avatar className="h-8 w-8">{selectedAvatar}</Avatar>
             <div className="flex flex-col items-start max-w-[140px]">
               <span
-                className="text-sm font-medium truncate w-full"
+                className={cn(
+                  "text-sm font-medium truncate w-full",
+                  isDarkMode ? "text-gray-200" : "text-gray-800"
+                )}
                 title={user.firstName ?? user.email}
               >
                 {user.firstName ?? user.email}
               </span>
               <span
-                className="text-xs text-gray-500 truncate w-full"
+                className={cn(
+                  "text-xs truncate w-full",
+                  isDarkMode ? "text-gray-400" : "text-gray-500"
+                )}
                 title={user.email}
               >
                 {user.email}
               </span>
             </div>
           </div>
-          <ChevronDown className="h-4 w-4 text-gray-500" />
+          <ChevronDown className={cn(
+            "h-4 w-4",
+            isDarkMode ? "text-gray-400" : "text-gray-500"
+          )} />
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
@@ -231,6 +249,7 @@ interface DraggableSyllabusProps {
 
 const DraggableSyllabus: React.FC<DraggableSyllabusProps> = React.memo(
   ({ syllabus, folderId, className }) => {
+    const { isDarkMode } = useTheme();
     const {
       attributes,
       listeners,
@@ -278,9 +297,13 @@ const DraggableSyllabus: React.FC<DraggableSyllabusProps> = React.memo(
           className || ''
         }
         ${
-          location.pathname === `/user/syllabus-results/${syllabus.id}`
-            ? 'bg-accent/50 text-accent-foreground'
-            : 'hover:bg-accent/50 hover:text-accent-foreground'
+          isDarkMode
+            ? location.pathname === `/user/syllabus-results/${syllabus.id}`
+              ? 'bg-gray-100/10 text-gray-200'
+              : 'text-gray-400 hover:bg-gray-100/5 hover:text-gray-200'
+            : location.pathname === `/user/syllabus-results/${syllabus.id}`
+              ? 'bg-accent/50 text-accent-foreground'
+              : 'hover:bg-accent/50 hover:text-accent-foreground'
         }`}
         onClick={handleClick}
         {...attributes}
@@ -303,7 +326,10 @@ const DraggableSyllabus: React.FC<DraggableSyllabusProps> = React.memo(
             <Button
               variant="ghost"
               size="sm"
-              className="h-4 w-4 p-1 hover:bg-gray-100 flex items-center justify-center rounded-sm opacity-60"
+              className={cn(
+                "h-4 w-4 p-1 flex items-center justify-center rounded-sm opacity-60",
+                isDarkMode ? "hover:bg-gray-100/5" : "hover:bg-gray-100"
+              )}
               onClick={(e) => {
                 e.stopPropagation();
                 navigate(`/user/syllabus/rename/${syllabus.id}`);
@@ -314,7 +340,10 @@ const DraggableSyllabus: React.FC<DraggableSyllabusProps> = React.memo(
             <DeleteSyllabusButton
               syllabusId={syllabus.id}
               variant="ghost"
-              className="h-4 w-4 p-1 hover:bg-gray-100 flex items-center justify-center rounded-sm opacity-60"
+              className={cn(
+                "h-4 w-4 p-1 flex items-center justify-center rounded-sm opacity-60",
+                isDarkMode ? "hover:bg-gray-100/5" : "hover:bg-gray-100"
+              )}
               onDelete={(e) => {
                 e?.stopPropagation();
                 eventEmitter.emit('syllabusDeleted', syllabus.id);
@@ -336,6 +365,7 @@ const FolderDropZone: React.FC<{
   onToggle: () => void;
   syllabuses: Syllabus[];
 }> = React.memo(({ folder, onDrop, isOpen, onToggle, syllabuses }) => {
+  const { isDarkMode } = useTheme();
   const { setNodeRef, isOver } = useDroppable({
     id: `folder-${folder.id}`,
     data: {
@@ -409,21 +439,29 @@ const FolderDropZone: React.FC<{
               strokeWidth: 1.5,
             }}
           />
-          <span className="text-xs font-medium text-gray-700">
+          <span className={cn(
+            "text-xs font-medium",
+            isDarkMode ? "text-white" : "text-gray-700"
+          )}>
             {folder.name}
           </span>
         </div>
         <button
-          className="p-1 hover:bg-gray-100 rounded-sm transition-colors"
+          className={cn(
+            "p-1 rounded-sm transition-colors",
+            isDarkMode ? "hover:bg-gray-100/5" : "hover:bg-gray-100"
+          )}
           onClick={(e) => {
             e.stopPropagation(); // Prevent duplicate toggle
             onToggle();
           }}
         >
           <ChevronDown
-            className={`h-3 w-3 transition-transform ${
+            className={cn(
+              "h-3 w-3 transition-transform",
+              isDarkMode ? "text-white" : "text-gray-700",
               isOpen ? 'rotate-180' : ''
-            }`}
+            )}
           />
         </button>
       </div>
@@ -502,6 +540,7 @@ const SideBar = ({
   user: User;
   isCollapsed: boolean;
 }) => {
+  const { isDarkMode } = useTheme();
   const location = useLocation();
   const [syllabusesOpen, setSyllabusesOpen] = useState(true);
   const [syllabuses, setSyllabuses] = useState<Syllabus[]>([]);
@@ -858,15 +897,27 @@ const SideBar = ({
   };
 
   return (
-    <div className="flex flex-col h-full bg-background border-r">
-      <div className="flex-shrink-0 p-3 border-b">
+    <div className={cn(
+      "flex flex-col h-full border-r",
+      isDarkMode ? "bg-[#202020] border-gray-700" : "bg-white border-gray-200"
+    )}>
+      <div className={cn(
+        "flex-shrink-0 p-3 border-b",
+        isDarkMode ? "border-gray-700" : "border-gray-200"
+      )}>
         <div className="flex items-center px-3 py-2">
           <Link to="/dashboard" className="flex items-center gap-2">
-            <img src={logoUrl} alt="SyllabAI Logo" className="h-8 w-8" />
+            <img 
+              src={isDarkMode ? logoWhiteUrl : logoUrl} 
+              alt="SyllabAI Logo" 
+              className="h-8 w-8" 
+            />
             <span
-              className={`text-xl font-bold whitespace-nowrap transition-all duration-300 ${
-                isCollapsed ? 'w-0 opacity-0' : 'w-auto opacity-100'
-              }`}
+              className={cn(
+                "text-xl font-bold whitespace-nowrap transition-all duration-300",
+                isCollapsed ? 'w-0 opacity-0' : 'w-auto opacity-100',
+                isDarkMode ? "text-white" : "text-gray-900"
+              )}
             >
               SyllabAI
             </span>
@@ -874,7 +925,10 @@ const SideBar = ({
         </div>
       </div>
 
-      <ScrollArea className="flex-1">
+      <ScrollArea className={cn(
+        "flex-1",
+        isDarkMode ? "bg-[#202020]" : "bg-white"
+      )}>
         <div className="px-3">
           <DndContext
             sensors={sensors}
@@ -891,16 +945,21 @@ const SideBar = ({
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="group h-8 w-full flex items-center justify-between px-2 mb-3 hover:bg-blue-500/90 hover:text-white transition-all duration-300 text-xs rounded-md"
+                  className={cn(
+                    "group h-8 w-full flex items-center justify-between px-2 mb-3 transition-all duration-300 text-xs rounded-md",
+                    isDarkMode 
+                      ? "hover:bg-gray-100/30 hover:text-gray-200 text-gray-300" 
+                      : "hover:bg-red-500/50 hover:text-white text-gray-500"
+                  )}
                   onClick={() => setIsCreatingFolder(true)}
                 >
                   <div className="flex items-center">
                     <FolderPlus className="h-4 w-4 mr-1" />
-                    <span className="text-xs font-medium text-gray-500 group-hover:text-white transition-colors duration-300">
+                    <span className="text-xs font-medium transition-colors duration-300">
                       Folders
                     </span>
                   </div>
-                  <span className="text-xs group-hover:text-white transition-colors duration-300">
+                  <span className="text-xs transition-colors duration-300">
                     New Folder
                   </span>
                 </Button>
@@ -912,7 +971,12 @@ const SideBar = ({
                         value={newFolderName}
                         onChange={(e) => setNewFolderName(e.target.value)}
                         placeholder="New folder"
-                        className="h-6 text-xs px-2 py-0 rounded-none border-0 border-b focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-b-2"
+                        className={cn(
+                          "h-6 text-xs px-2 py-0 rounded-none border-0 border-b focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-b-2",
+                          isDarkMode 
+                            ? "bg-[#202020] text-white border-gray-700 placeholder-gray-500" 
+                            : "bg-white text-gray-900 border-gray-200 placeholder-gray-400"
+                        )}
                         autoFocus
                         onKeyDown={(e) => {
                           if (e.key === 'Enter') {
@@ -923,7 +987,10 @@ const SideBar = ({
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="h-6 w-6 p-0"
+                        className={cn(
+                          "h-6 w-6 p-0",
+                          isDarkMode ? "text-blue-400 hover:bg-gray-800/50" : "text-blue-600 hover:bg-blue-50"
+                        )}
                         onClick={createFolder}
                       >
                         <Check className="h-3 w-3" />
@@ -931,7 +998,10 @@ const SideBar = ({
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="h-6 w-6 p-0"
+                        className={cn(
+                          "h-6 w-6 p-0",
+                          isDarkMode ? "text-red-400 hover:bg-gray-800/50" : "text-red-600 hover:bg-red-50"
+                        )}
                         onClick={() => {
                           setIsCreatingFolder(false);
                           setNewFolderName('');
@@ -945,11 +1015,10 @@ const SideBar = ({
                       {colors.map((color) => (
                         <button
                           key={color}
-                          className={`w-4 h-4 rounded-full transition-transform hover:scale-110 ${
-                            selectedColor === color
-                              ? 'ring-2 ring-offset-2 ring-gray-200'
-                              : ''
-                          }`}
+                          className={cn(
+                            "w-4 h-4 rounded-full transition-transform hover:scale-110",
+                            selectedColor === color && (isDarkMode ? "ring-2 ring-offset-2 ring-gray-700" : "ring-2 ring-offset-2 ring-gray-200")
+                          )}
                           style={{ backgroundColor: color }}
                           onClick={() => setSelectedColor(color)}
                         />
@@ -995,7 +1064,10 @@ const SideBar = ({
         </div>
       </ScrollArea>
 
-      <div className="flex-shrink-0 px-3 py-3 border-t">
+      <div className={cn(
+        "flex-shrink-0 px-3 py-3 border-t",
+        isDarkMode ? "border-gray-700" : "border-gray-200"
+      )}>
         <div
           className={`transition-all duration-300 ${
             isCollapsed ? 'h-0 opacity-0' : 'h-auto opacity-100'
@@ -1005,9 +1077,11 @@ const SideBar = ({
         </div>
         <Link
           to="/user/syllabus-upload"
-          className={`flex items-center w-full px-3 py-2 mb-3 mt-4 text-sm font-medium rounded-sm bg-blue-600 hover:bg-blue-700 text-white transition-colors ${
-            isCollapsed ? 'justify-center' : ''
-          }`}
+          className={cn(
+            "flex items-center w-full px-3 py-2 mb-3 mt-4 text-sm font-medium rounded-sm text-white transition-colors",
+            isCollapsed ? "justify-center" : "",
+            isDarkMode ? "bg-blue-600 hover:bg-blue-600/90" : "bg-blue-600 hover:bg-blue-600/90"
+          )}
         >
           <FileText
             className={`${
@@ -1059,13 +1133,17 @@ const UserLayout = () => {
   const data = useLoaderData() as { user: User };
   const rootOutletContext = useOutletContext<RootOutletContext>();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const { isDarkMode } = useTheme();
 
   if (!data.user) {
     return null;
   }
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className={cn(
+      "min-h-screen flex flex-col",
+      isDarkMode ? "bg-[#191919]" : "bg-white"
+    )}>
       <div className="flex flex-1">
         <SideBarMenuButtonDrawer user={data.user} />
         <div
@@ -1077,22 +1155,34 @@ const UserLayout = () => {
             <SideBar user={data.user} isCollapsed={isSidebarCollapsed} />
             <button
               onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-              className={`absolute bg-white rounded-full p-1.5 shadow-md hover:bg-gray-50 transition-colors border ${
+              className={cn(
+                "absolute rounded-full p-1.5 shadow-md transition-colors border z-[9999]",
+                isDarkMode 
+                  ? "bg-gray-800 hover:bg-gray-700 border-gray-700" 
+                  : "bg-white hover:bg-gray-50 border-gray-200",
                 isSidebarCollapsed ? '-right-3 top-4' : '-right-3 top-4'
-              }`}
+              )}
             >
               {isSidebarCollapsed ? (
-                <ChevronRight className="h-4 w-4" />
+                <ChevronRight className={cn(
+                  "h-4 w-4",
+                  isDarkMode ? "text-gray-200" : "text-gray-800"
+                )} />
               ) : (
-                <ChevronLeft className="h-4 w-4" />
+                <ChevronLeft className={cn(
+                  "h-4 w-4",
+                  isDarkMode ? "text-gray-200" : "text-gray-800"
+                )} />
               )}
             </button>
           </div>
         </div>
         <div
-          className={`flex-1 transition-all duration-300 ${
+          className={cn(
+            "flex-1 transition-all duration-300",
+            isDarkMode ? "bg-[#191919]" : "bg-white",
             isSidebarCollapsed ? 'md:ml-16' : 'md:ml-56'
-          }`}
+          )}
         >
           <Outlet context={{ ...rootOutletContext, user: data.user }} />
         </div>

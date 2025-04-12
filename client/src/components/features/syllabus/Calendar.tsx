@@ -10,6 +10,7 @@ import { Calendar as CalendarInput } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { toast } from "sonner";
+import { useTheme } from "@/hooks/use-theme";
 
 interface CalendarEvent {
   date: string;
@@ -36,6 +37,7 @@ export function Calendar({ dates, onAddEvent, onDeleteEvent }: CalendarProps) {
     date: new Date()
   });
   const [isDeleting, setIsDeleting] = useState(false);
+  const { isDarkMode } = useTheme();
 
   // Calendar navigation
   const prevMonth = () => {
@@ -118,18 +120,37 @@ export function Calendar({ dates, onAddEvent, onDeleteEvent }: CalendarProps) {
             variant="outline"
             size="icon"
             onClick={prevMonth}
+            className={cn(
+              isDarkMode 
+                ? "bg-[#202020] border-gray-700 hover:bg-[#2a2a2a] hover:border-gray-600" 
+                : "bg-white hover:bg-gray-100"
+            )}
           >
-            <ChevronLeft className="h-4 w-4" />
+            <ChevronLeft className={cn(
+              "h-4 w-4",
+              isDarkMode ? "text-gray-200" : "text-gray-600"
+            )} />
           </Button>
-          <h2 className="text-xl font-semibold">
+          <h2 className={cn(
+            "text-xl font-semibold",
+            isDarkMode ? "text-gray-200" : "text-gray-900"
+          )}>
             {currentDate.toLocaleString("default", { month: "long", year: "numeric" })}
           </h2>
           <Button
             variant="outline"
             size="icon"
             onClick={nextMonth}
+            className={cn(
+              isDarkMode 
+                ? "bg-[#202020] border-gray-700 hover:bg-[#2a2a2a] hover:border-gray-600" 
+                : "bg-white hover:bg-gray-100"
+            )}
           >
-            <ChevronRight className="h-4 w-4" />
+            <ChevronRight className={cn(
+              "h-4 w-4",
+              isDarkMode ? "text-gray-200" : "text-gray-600"
+            )} />
           </Button>
         </div>
         <Button onClick={() => setIsAddEventDialogOpen(true)}>
@@ -247,11 +268,20 @@ export function Calendar({ dates, onAddEvent, onDeleteEvent }: CalendarProps) {
       </Popover>
 
       {/* Calendar Grid */}
-      <div className="border border-gray-200 rounded-lg overflow-hidden">
+      <div className={cn(
+        "border rounded-lg overflow-hidden",
+        isDarkMode ? "border-gray-700" : "border-gray-200"
+      )}>
         {/* Day names */}
-        <div className="grid grid-cols-7 border-b border-gray-200">
+        <div className={cn(
+          "grid grid-cols-7 border-b",
+          isDarkMode ? "border-gray-700 bg-[#202020]" : "border-gray-200 bg-white"
+        )}>
           {dayNames.map(day => (
-            <div key={day} className="text-xs font-medium text-gray-500 p-2 text-center">
+            <div key={day} className={cn(
+              "text-xs font-medium p-2 text-center",
+              isDarkMode ? "text-gray-400" : "text-gray-500"
+            )}>
               {day}
             </div>
           ))}
@@ -273,13 +303,19 @@ export function Calendar({ dates, onAddEvent, onDeleteEvent }: CalendarProps) {
             return (
               <div 
                 key={index} 
-                className={`min-h-[100px] p-2 border-b border-r border-gray-200 ${
-                  day ? 'bg-white' : 'bg-gray-50'
-                } ${isToday ? 'bg-blue-50' : ''}`}
+                className={cn(
+                  "min-h-[100px] p-2 border-b border-r",
+                  isDarkMode ? "border-gray-700" : "border-gray-200",
+                  day ? isDarkMode ? "bg-[#202020]" : "bg-white" : isDarkMode ? "bg-[#191919]" : "bg-gray-50",
+                  isToday && (isDarkMode ? "bg-blue-900/20" : "bg-blue-50")
+                )}
               >
                 {day && (
                   <>
-                    <div className={`text-sm mb-1 ${isToday ? 'font-semibold text-blue-600' : ''}`}>
+                    <div className={cn(
+                      "text-sm mb-1",
+                      isToday ? "font-semibold text-blue-500" : isDarkMode ? "text-gray-300" : "text-gray-700"
+                    )}>
                       {day}
                     </div>
                     <div className="space-y-1">
@@ -289,11 +325,14 @@ export function Calendar({ dates, onAddEvent, onDeleteEvent }: CalendarProps) {
                           <Popover key={eventIndex}>
                             <PopoverTrigger asChild>
                               <div 
-                                className={`text-xs p-1 rounded truncate cursor-pointer hover:opacity-90 transition-opacity ${
-                                  event.type === 'assessment' ? 'bg-blue-100 text-blue-700' :
-                                  event.type === 'class' ? 'bg-purple-100 text-purple-700' :
-                                  'bg-gray-100 text-gray-700'
-                                }`}
+                                className={cn(
+                                  "text-xs p-1 rounded truncate cursor-pointer hover:opacity-90 transition-opacity",
+                                  event.type === 'assessment' 
+                                    ? isDarkMode ? "bg-blue-900/50 text-blue-200" : "bg-blue-100 text-blue-700"
+                                    : event.type === 'class' 
+                                    ? isDarkMode ? "bg-purple-900/50 text-purple-200" : "bg-purple-100 text-purple-700"
+                                    : isDarkMode ? "bg-gray-800 text-gray-200" : "bg-gray-100 text-gray-700"
+                                )}
                               >
                                 {event.title}
                               </div>

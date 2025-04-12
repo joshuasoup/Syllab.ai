@@ -9,12 +9,15 @@ import { extractDateFromText } from "@/components/features/syllabus/SubComponent
 import type { AuthOutletContext } from "@/routes/layout/_user";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
+import { useTheme } from "@/hooks/use-theme";
 
 export default function CalendarRoute() {
   const { id } = useParams();
   const { user } = useOutletContext<AuthOutletContext>();
   const navigate = useNavigate();
   const location = useLocation();
+  const { isDarkMode } = useTheme();
   const [localEvents, setLocalEvents] = useState<CalendarEvent[]>([]);
 
   // Fetch syllabus data with proper caching and throttling
@@ -219,7 +222,7 @@ export default function CalendarRoute() {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-4">
         <div className="text-center">
-          <p className="text-gray-600 mb-4">
+          <p className="text-gray-500 mb-4">
             {error ? "Unable to load syllabus" : "Syllabus not found"}
           </p>
           <Button 
@@ -234,13 +237,18 @@ export default function CalendarRoute() {
   }
 
   return (
-    <div className="container mx-auto p-8">
+    <div className="container mx-auto p-8 bg-gray-1000">
       <div className="max-w-7xl mx-auto">
         <div className="flex items-center gap-2 mb-6">
           <Button 
             variant="outline" 
             size="sm"
-            className="flex items-center gap-1" 
+            className={cn(
+              "flex items-center gap-1",
+              isDarkMode 
+                ? "bg-[#202020] border-gray-700 hover:bg-[#2a2a2a] hover:border-gray-600 text-gray-200" 
+                : "bg-white hover:bg-gray-100"
+            )}
             onClick={() => {
               if (location.state && location.state.from) {
                 navigate(location.state.from);
@@ -249,12 +257,18 @@ export default function CalendarRoute() {
               }
             }}
           >
-            <ArrowLeft className="h-4 w-4" />
+            <ArrowLeft className={cn(
+              "h-4 w-4",
+              isDarkMode ? "text-gray-200" : "text-gray-600"
+            )} />
             Back to Results
           </Button>
         </div>
-        <h1 className="text-3xl font-bold mb-8">Course Calendar - {syllabus.title.replace(/\.pdf$/i, '')}</h1>
-        <div className="bg-white rounded-xl border-2 border-gray-200 p-6 shadow-md">
+        <h1 className="text-3xl font-bold mb-8 text-white">Course Calendar - {syllabus.title.replace(/\.pdf$/i, '')}</h1>
+        <div className={cn(
+          "rounded-xl border-2 p-6 shadow-md",
+          isDarkMode ? "bg-[#202020] border-gray-700" : "bg-white border-gray-200"
+        )}>
           <Calendar 
             dates={allDates} 
             onAddEvent={handleAddEvent} 
