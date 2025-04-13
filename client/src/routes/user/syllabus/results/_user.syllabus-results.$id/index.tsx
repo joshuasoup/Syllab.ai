@@ -35,8 +35,10 @@ import {
 import { Button } from '@/components/ui/button';
 import { DeleteSyllabusButton } from '@/components/features/syllabus/DeleteSyllabusButton';
 import { GradeCalculator } from '@/components/features/syllabus/GradeCalculator';
+
 import { useTheme } from '@/hooks/use-theme';
 import { cn } from '@/lib/utils';
+import ChatbotDialog from '@/components/features/chat/ChatbotDialog';
 
 // Define an interface for completed tasks
 interface CompletedTask {
@@ -50,7 +52,9 @@ export default function SyllabusResults() {
   const navigate = useNavigate();
   const { user } = useOutletContext<AuthOutletContext>();
   const location = useLocation();
+  
   const { isDarkMode, toggleTheme } = useTheme();
+  const [chatOpen, setChatOpen] = useState(false);
 
   // State declarations - all grouped together at the top
   const [completedTasks, setCompletedTasks] = useState<CompletedTask[]>(() => {
@@ -61,6 +65,19 @@ export default function SyllabusResults() {
     return savedTasks ? JSON.parse(savedTasks) : [];
   });
 
+  // Add keyboard shortcut for opening chatbot with cmd+k
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setChatOpen(true);
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   // Initialize bgColor state with loading from localStorage
   const [bgColor, setBgColor] = useState(() => {
     if (!id) return '#3b82f6'; // Default blue color
@@ -69,6 +86,13 @@ export default function SyllabusResults() {
     const savedColor = localStorage.getItem(`syllabus_color_${id}`);
     return savedColor || '#3b82f6'; // Return saved color or default blue
   });
+
+  // Define a type for the schedule
+type DaySchedule = {
+  day: string;
+  startTime: string;
+  endTime: string;
+};
 
   // Update color when syllabus ID changes
   useEffect(() => {
@@ -319,13 +343,21 @@ export default function SyllabusResults() {
       .flatMap((event: ICSEvent) => {
         // Parse the recurrence string to get days and times
         const recurrencePattern = event.recurrence.replace('Every ', '');
-        const schedules = recurrencePattern
-          .split(', ')
-          .map((schedule: string) => {
-            const [day, time] = schedule.split(' ');
-            const [startTime, endTime] = time.split('-');
+       const schedules = (recurrencePattern?.split(', ') || []).map((schedule: string) => {
+            if (!schedule) return null;
+            const parts = schedule.split(' ');
+            if (parts.length < 2) return null;
+            
+            const [day, time] = parts;
+            if (!time) return null;
+            
+            const timeParts = time.split('-');
+            const startTime = timeParts[0];
+            const endTime = timeParts[1];
+            
             return { day, startTime, endTime };
-          });
+        })
+        .filter((item): item is DaySchedule => item !== null); // Type guard to remove nulls
 
         // Get the current month's dates for these days
         const currentDate = new Date();
@@ -507,10 +539,22 @@ export default function SyllabusResults() {
                   ? "bg-gray-800/50 hover:bg-gray-800/70 text-gray-200" 
                   : "bg-white/70 hover:bg-white/90 text-gray-900"
               )}
+            {/* Replace Chat button with ChatbotDialog trigger */}
+            <div 
+              className="flex items-center gap-1 bg-white/70 px-2 py-1.5 rounded-full cursor-pointer hover:bg-white/90 transition-colors whitespace-nowrap text-xs"
+              onClick={() => setChatOpen(true)}
             >
               <MessageCircle className="w-3 h-3 flex-shrink-0 text-purple-500" />
               <span className="font-medium">Chat</span>
             </div>
+            
+            {/* Add ChatbotDialog component */}
+            <ChatbotDialog 
+              syllabusId={id!}
+              open={chatOpen}
+              onOpenChange={setChatOpen}
+              trigger={null}
+            />
           </div>
         </div>
         <p className={cn(
