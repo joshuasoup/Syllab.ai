@@ -23,6 +23,8 @@ import {
   Palette,
   CheckCircle,
   Circle,
+  Moon,
+  Sun,
 } from 'lucide-react';
 import type { AuthOutletContext } from "@/routes/layout/_user";
 import {
@@ -33,6 +35,9 @@ import {
 import { Button } from '@/components/ui/button';
 import { DeleteSyllabusButton } from '@/components/features/syllabus/DeleteSyllabusButton';
 import { GradeCalculator } from '@/components/features/syllabus/GradeCalculator';
+
+import { useTheme } from '@/hooks/use-theme';
+import { cn } from '@/lib/utils';
 import ChatbotDialog from '@/components/features/chat/ChatbotDialog';
 
 // Define an interface for completed tasks
@@ -47,6 +52,8 @@ export default function SyllabusResults() {
   const navigate = useNavigate();
   const { user } = useOutletContext<AuthOutletContext>();
   const location = useLocation();
+  
+  const { isDarkMode, toggleTheme } = useTheme();
   const [chatOpen, setChatOpen] = useState(false);
 
   // State declarations - all grouped together at the top
@@ -177,8 +184,13 @@ type DaySchedule = {
 
   // Function to handle random color generation
   const generateRandomColor = () => {
-    const hue = Math.floor(Math.random() * 360);
-    const color = `hsl(${hue}, 70%, 80%)`;
+    // Generate random RGB values
+    const r = Math.floor(Math.random() * 256);
+    const g = Math.floor(Math.random() * 256);
+    const b = Math.floor(Math.random() * 256);
+    
+    // Convert to hex
+    const color = `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
     handleColorChange(color);
   };
 
@@ -472,44 +484,68 @@ type DaySchedule = {
   };
 
   return (
-    <div className="container mx-auto p-4 mt-2 relative">
+    <div className={cn(
+      "container mx-auto p-4 mt-2 relative",
+      isDarkMode ? "bg-[#191919]" : "bg-white"
+    )}>
       {/* Dashboard Header with Blue Background */}
       <div
-        className="rounded-xl p-6 mb-6 relative"
+        className={cn(
+          "rounded-xl p-6 mb-6 relative",
+          isDarkMode ? "bg-[#202020]" : "bg-white"
+        )}
         style={{ background: bgColor }}
       >
         <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-2 mb-3">
           <div className="flex-1 min-w-0">
-            <h1 className="text-2xl sm:text-3xl font-bold whitespace-normal min-w-0 pr-4 text-white">
+            <h1 className={cn(
+              "text-2xl sm:text-3xl font-bold whitespace-normal min-w-0 pr-4",
+              isDarkMode ? "text-gray-200" : "text-white"
+            )}>
               {syllabus.title.replace(/\.pdf$/i, '')}
             </h1>
           </div>
           <div className="flex items-center flex-nowrap gap-2 mt-1 lg:mt-0">
             <div
-              className="flex items-center gap-1 bg-white/70 px-2 py-1.5 rounded-full cursor-pointer hover:bg-white/90 transition-colors whitespace-nowrap text-xs"
+              className={cn(
+                "flex items-center gap-1 px-2 py-1.5 rounded-full cursor-pointer transition-colors whitespace-nowrap text-xs",
+                isDarkMode 
+                  ? "bg-gray-800/50 hover:bg-gray-800/70 text-gray-200" 
+                  : "bg-white/70 hover:bg-white/90 text-gray-900"
+              )}
               onClick={handleDownloadCalendar}
             >
               <CalendarIcon className="w-3 h-3 flex-shrink-0 text-blue-500" />
-              <span className="font-medium text-gray-900">
-                Add to Your Calendar
-              </span>
+              <span className="font-medium">Add to Your Calendar</span>
             </div>
             <DeleteSyllabusButton
               syllabusId={id!}
               variant="ghost"
-              className="flex items-center gap-1 bg-white/70 px-2 py-1.5 rounded-full hover:bg-white/90 transition-colors whitespace-nowrap text-xs h-auto"
+              className={cn(
+                "flex items-center gap-1 px-2 py-1.5 rounded-full transition-colors whitespace-nowrap text-xs h-auto",
+                isDarkMode 
+                  ? "bg-gray-800/50 hover:bg-gray-800/70 text-gray-200" 
+                  : "bg-white/70 hover:bg-white/90 text-gray-900"
+              )}
               redirectTo="/user/syllabus-upload"
             >
               <Trash2 className="w-3 h-3 flex-shrink-0 text-red-500 mr-1" />
-              <span className="font-medium text-gray-900">Delete</span>
+              <span className="font-medium">Delete</span>
             </DeleteSyllabusButton>
+            <div
+              className={cn(
+                "flex items-center gap-1 px-2 py-1.5 rounded-full cursor-pointer transition-colors whitespace-nowrap text-xs",
+                isDarkMode 
+                  ? "bg-gray-800/50 hover:bg-gray-800/70 text-gray-200" 
+                  : "bg-white/70 hover:bg-white/90 text-gray-900"
+              )}
             {/* Replace Chat button with ChatbotDialog trigger */}
             <div 
               className="flex items-center gap-1 bg-white/70 px-2 py-1.5 rounded-full cursor-pointer hover:bg-white/90 transition-colors whitespace-nowrap text-xs"
               onClick={() => setChatOpen(true)}
             >
               <MessageCircle className="w-3 h-3 flex-shrink-0 text-purple-500" />
-              <span className="font-medium text-gray-900">Chat</span>
+              <span className="font-medium">Chat</span>
             </div>
             
             {/* Add ChatbotDialog component */}
@@ -521,7 +557,10 @@ type DaySchedule = {
             />
           </div>
         </div>
-        <p className="text-white/90 font-medium text-sm mb-2">
+        <p className={cn(
+          "font-medium text-sm mb-2",
+          isDarkMode ? "text-gray-300" : "text-white/90"
+        )}>
           Welcome to {data.course_info?.name || 'your course'}! You are{' '}
           {allDates
             .filter(
@@ -535,18 +574,35 @@ type DaySchedule = {
         {/* Color Picker in Bottom Right of Header */}
         <Popover>
           <PopoverTrigger asChild>
-            <div className="absolute bottom-2 right-2 w-8 h-8 bg-white/70 rounded-full flex items-center justify-center cursor-pointer hover:bg-white/90 transition-colors">
-              <Palette className="w-4 h-4 text-gray-600" />
+            <div className={cn(
+              "absolute bottom-2 right-2 w-8 h-8 rounded-full flex items-center justify-center cursor-pointer transition-colors",
+              isDarkMode 
+                ? "bg-gray-800/50 hover:bg-gray-800/70" 
+                : "bg-white/70 hover:bg-white/90"
+            )}>
+              <Palette className={cn(
+                "w-4 h-4",
+                isDarkMode ? "text-gray-300" : "text-gray-600"
+              )} />
             </div>
           </PopoverTrigger>
-          <PopoverContent className="w-64 p-3" side="top">
+          <PopoverContent className={cn(
+            "w-64 p-3 rounded-xl shadow-lg border",
+            isDarkMode ? "bg-[#202020] border-gray-700" : "bg-white border-gray-200"
+          )} side="top">
             <div className="space-y-3">
-              <h4 className="font-medium text-sm">Dashboard Color</h4>
+              <h4 className={cn(
+                "font-medium text-sm",
+                isDarkMode ? "text-gray-200" : "text-gray-900"
+              )}>Dashboard Color</h4>
               <div className="grid grid-cols-5 gap-2">
                 {colorOptions.map((option) => (
                   <button
                     key={option.color}
-                    className="w-10 h-10 rounded-md hover:scale-110 transition-all shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2"
+                    className={cn(
+                      "w-10 h-10 rounded-md hover:scale-110 transition-all shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2",
+                      isDarkMode ? "focus:ring-gray-700" : "focus:ring-gray-200"
+                    )}
                     style={{ backgroundColor: option.color }}
                     onClick={() => handleColorChange(option.color)}
                     title={option.name}
@@ -573,12 +629,21 @@ type DaySchedule = {
           {/* Calendar Widget - Google Calendar style */}
           <Link
             to={`/user/syllabus-results/${id}/calendar`}
-            className="rounded-xl border-2 border-gray-200 shadow-sm hover:shadow transition-all block group"
+            className={cn(
+              "rounded-xl shadow-lg hover:shadow-xl transition-all block group border",
+              isDarkMode ? "border-gray-700" : "border-gray-200"
+            )}
             state={{ from: location.pathname }}
           >
-            <div className="p-6 bg-white relative">
+            <div className={cn(
+              "p-6 relative",
+              isDarkMode ? "bg-[#202020]" : "bg-white"
+            )}>
               <h2
-                className="text-2xl font-bold mb-6 pb-2 border-b border-gray-200 flex items-center justify-between group-hover:text-[color:var(--theme-color)] transition-colors"
+                className={cn(
+                  "text-2xl font-bold mb-6 pb-2 border-b flex items-center justify-between group-hover:text-[color:var(--theme-color)] transition-colors",
+                  isDarkMode ? "border-gray-700 text-gray-200" : "border-gray-200 text-gray-900"
+                )}
                 style={{ '--theme-color': bgColor } as React.CSSProperties}
               >
                 <div className="flex items-center">
@@ -594,55 +659,69 @@ type DaySchedule = {
                   <span className="group-hover:drop-shadow-sm">Calendar</span>
                 </div>
                 <ChevronRight
-                  className="w-5 h-5 text-gray-400 group-hover:text-[color:var(--theme-color)] transition-transform group-hover:translate-x-1"
+                  className="w-5 h-5 group-hover:text-[color:var(--theme-color)] transition-transform group-hover:translate-x-1"
                   style={{ '--theme-color': bgColor } as React.CSSProperties}
                 />
               </h2>
 
               {/* Today's date - redesigned for better theme fit */}
-              <div className="flex items-center mb-3">
-                <div className="text-sm text-gray-800">
-                  <span className="font-medium">
-                    {new Date().toLocaleDateString('en-US', {
-                      weekday: 'short',
-                      day: 'numeric',
-                      month: 'long',
-                      year: 'numeric'
-                    })}
-                  </span>
+              <div 
+                className="p-4 rounded-lg border"
+                style={{ 
+                  backgroundColor: isDarkMode 
+                    ? `${bgColor}33`  // 20% opacity in dark mode
+                    : `${bgColor}1a`  // 10% opacity in light mode
+                }}
+              >
+                <div className={cn(
+                  "text-sm font-medium mb-2",
+                  isDarkMode ? "text-white" : "text-gray-900"
+                )}>
+                  {new Date().toLocaleDateString('en-US', {
+                    weekday: 'long',
+                    month: 'long',
+                    day: 'numeric',
+                  })}
                 </div>
-              </div>
-
-              {/* Today's events */}
-              <div>
                 <div className="space-y-2">
-                  <h4 className="text-xs font-medium text-gray-500 uppercase mb-1">
-                    Today's Events
-                  </h4>
                   {(() => {
                     const today = new Date().toISOString().split('T')[0];
-                    const todayEvents = allDates.filter(event => event.date === today);
-                    
+                    const todayEvents = allDates.filter(
+                      (event) => event.date === today
+                    );
+
                     if (todayEvents.length === 0) {
                       return (
-                        <div className="text-sm text-gray-500 italic">
-                          No events scheduled for today
+                        <div className={cn(
+                          "text-sm",
+                          isDarkMode ? "text-gray-400" : "text-gray-600"
+                        )}>
+                          No events today
                         </div>
                       );
                     }
 
                     return todayEvents.map((event, index) => (
-                      <div key={index} className="flex items-start p-2 bg-gray-50 rounded-md">
+                      <div key={index} className={cn(
+                        "flex items-start p-2 rounded-md",
+                        isDarkMode ? "bg-gray-800" : "bg-gray-50"
+                      )}>
                         <div
                           className="w-2 h-2 rounded-full mr-2 mt-1.5"
                           style={{ backgroundColor: bgColor }}
                         ></div>
                         <div className="flex-1">
-                          <div className="font-medium text-sm text-gray-800">
+                          <div className={cn(
+                            "font-medium text-sm",
+                            isDarkMode ? "text-gray-200" : "text-gray-800"
+                          )}>
                             {event.title}
                           </div>
                           {event.location && (
-                            <div className="text-xs text-gray-500 flex items-center">
+                            <div className={cn(
+                              "text-xs flex items-center",
+                              isDarkMode ? "text-gray-400" : "text-gray-500"
+                            )}>
                               <span>{event.location}</span>
                             </div>
                           )}
@@ -656,15 +735,24 @@ type DaySchedule = {
           </Link>
 
           {/* Course Info Section */}
-          <div className="rounded-lg border border-gray-200 p-4 shadow-sm">
-            <h3 className="font-bold text-gray-800 border-b border-gray-100 pb-2 mb-3">
+          <div className={cn(
+            "rounded-xl p-6 shadow-lg border",
+            isDarkMode ? "bg-[#202020] border-gray-700" : "bg-white border-gray-200"
+          )}>
+            <h3 className={cn(
+              "font-bold border-b pb-2 mb-3",
+              isDarkMode ? "text-gray-200 border-gray-700" : "text-gray-800 border-gray-100"
+            )}>
               <div className="flex items-center justify-between w-full">
                 <div className="flex items-center gap-2">
                   <span className="truncate" title={data.course_info?.name}>
                     {data.course_info?.name || 'Course Info'}
                   </span>
                   {data.course_info?.code && (
-                    <span className="text-xs text-gray-500">
+                    <span className={cn(
+                      "text-xs",
+                      isDarkMode ? "text-gray-400" : "text-gray-500"
+                    )}>
                       {data.course_info.code}
                     </span>
                   )}
@@ -679,28 +767,38 @@ type DaySchedule = {
         </div>
 
         {/* Assessments List Widget */}
-        <div className="rounded-xl border-2 border-gray-200 p-6 shadow-md hover:shadow-lg transition-shadow lg:col-span-2">
-          <h2 className="text-2xl font-bold mb-6 pb-2 border-b border-gray-200 flex items-center">
+        <div className={cn(
+          "rounded-xl p-6 shadow-lg border lg:col-span-2",
+          isDarkMode ? "bg-[#202020] border-gray-700" : "bg-white border-gray-200"
+        )}>
+          <h2 className={cn(
+            "text-2xl font-bold mb-6 pb-2 border-b flex items-center",
+            isDarkMode ? "text-white border-gray-700" : "text-gray-900 border-gray-200"
+          )}>
             <ClipboardList
               className="mr-2 h-5 w-5"
               style={{ color: bgColor }}
             />
             <span>Assessments &amp; Deadlines</span>
           </h2>
-          <div className="bg-gray-50 p-4 rounded-lg max-h-[500px] overflow-y-auto">
+          <div 
+            className="p-4 rounded-lg max-h-[500px] overflow-y-auto"
+            style={{ 
+              backgroundColor: isDarkMode 
+                ? `${bgColor}33`  // 20% opacity in dark mode
+                : `${bgColor}1a`  // 10% opacity in light mode
+            }}
+          >
             {sortedEvents.length > 0 ? (
               <div className="space-y-2">
-                {/* All tasks (both active and completed), maintaining original order */}
                 {sortedEvents.map((event, index) => {
                   const eventDate = new Date(event.date + 'T12:00:00');
                   const today = new Date();
-                  today.setHours(12, 0, 0, 0); // Set to noon to match eventDate
+                  today.setHours(12, 0, 0, 0);
                   
                   const isToday = eventDate.getTime() === today.getTime();
-                  const isUpcoming =
-                    !isNaN(eventDate.getTime()) && eventDate > today;
-                  const isPast =
-                    !isNaN(eventDate.getTime()) && eventDate < today;
+                  const isUpcoming = !isNaN(eventDate.getTime()) && eventDate > today;
+                  const isPast = !isNaN(eventDate.getTime()) && eventDate < today;
                   const formattedDate = !isNaN(eventDate.getTime())
                     ? eventDate.toLocaleDateString('en-US', {
                         weekday: 'short',
@@ -709,7 +807,6 @@ type DaySchedule = {
                       })
                     : 'No date';
 
-                  // Find matching assessment in the assessments array to get weight
                   const assessmentData = data.assessments?.find(
                     (a) =>
                       a.name &&
@@ -722,7 +819,6 @@ type DaySchedule = {
                   const taskId = `${event.title}-${event.date}`;
                   const completed = isTaskCompleted(taskId);
 
-                  // Default to upcoming for items with invalid dates
                   const status = completed
                     ? 'completed'
                     : isToday
@@ -734,124 +830,87 @@ type DaySchedule = {
                   return (
                     <div
                       key={index}
-                      className={`flex flex-col p-3 rounded-lg ${
-                        status === 'completed'
-                          ? 'bg-gray-50 border border-gray-200 opacity-75'
-                          : status === 'past'
-                          ? 'bg-gray-50 border border-gray-200'
-                          : `bg-${bgColor}/5 border border-${bgColor}/20`
-                      }`}
+                      className={cn(
+                        "flex items-start gap-3 p-3 rounded-lg transition-colors border",
+                        isDarkMode ? "hover:bg-gray-800/70 border-gray-700" : "hover:bg-gray-100 border-gray-200"
+                      )}
                     >
-                      <div className="flex items-center justify-between mb-1">
-                        <div className="flex items-center gap-2">
-                          <div
-                            className={`px-2 py-1 text-xs font-medium rounded-full ${
-                              status === 'completed'
-                                ? `bg-${bgColor}/20 text-${bgColor}`
-                                : status === 'today'
-                                ? 'bg-yellow-100 text-yellow-800'
-                                : status === 'past'
-                                ? 'bg-gray-200 text-gray-700'
-                                : `bg-${bgColor}/20 text-${bgColor}`
-                            }`}
-                            style={{
-                              backgroundColor:
-                                status === 'completed' ||
-                                status === 'upcoming'
-                                  ? `${bgColor}20`
-                                  : '',
-                            }}
-                          >
-                            {status === 'completed'
-                              ? 'Completed'
-                              : status === 'today'
-                              ? 'Due Today'
-                              : status === 'past'
-                              ? 'Past'
-                              : 'Upcoming'}
-                          </div>
-                          <div className="text-xs text-gray-500">
+                      <button
+                        onClick={() => toggleTaskCompletion(taskId)}
+                        className={cn(
+                          "flex-shrink-0 mt-1",
+                          completed ? "text-green-500" : "text-gray-400"
+                        )}
+                      >
+                        {completed ? (
+                          <CheckCircle className="h-5 w-5" />
+                        ) : (
+                          <Circle className="h-5 w-5" />
+                        )}
+                      </button>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between mb-1">
+                          <div className={cn(
+                            "text-xs",
+                            isDarkMode ? "text-white" : "text-gray-500"
+                          )}>
                             {event.type === 'assessment'
                               ? 'Assessment'
                               : 'Deadline'}
                           </div>
-                        </div>
-                        <div className="text-sm font-medium text-gray-600">
-                          {formattedDate}
-                        </div>
-                      </div>
-
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-start gap-2">
-                          <button
-                            onClick={() =>
-                              toggleTaskCompletion(
-                                taskId,
-                                event.title,
-                                event.date
-                              )
-                            }
-                            className="mt-0.5 flex-shrink-0 focus:outline-none"
-                          >
-                            {completed ? (
-                              <CheckCircle
-                                className="w-5 h-5"
-                                style={{ color: bgColor }}
-                              />
-                            ) : (
-                              <Circle
-                                className="w-5 h-5 text-gray-400"
-                                style={{
-                                  color: 'rgba(156, 163, 175, 1)',
-                                }}
-                                onMouseOver={(e) =>
-                                  (e.currentTarget.style.color = bgColor)
-                                }
-                                onMouseOut={(e) =>
-                                  (e.currentTarget.style.color =
-                                    'rgba(156, 163, 175, 1)')
-                                }
-                              />
-                            )}
-                          </button>
-                          <div>
-                            <div
-                              className={`font-semibold ${
-                                completed ? 'line-through' : 'text-gray-900'
-                              }`}
-                              style={{ color: completed ? bgColor : '' }}
-                            >
-                              {event.title}
-                            </div>
-                            {hasWeight && (
-                              <div
-                                className={`text-xs mt-1 flex items-center ${
-                                  completed
-                                    ? 'text-gray-400'
-                                    : 'text-gray-600'
-                                }`}
-                              >
-                                <div className="w-20 h-1.5 bg-gray-200 rounded-full overflow-hidden mr-2">
-                                  <div
-                                    className="h-full rounded-full"
-                                    style={{
-                                      backgroundColor: completed
-                                        ? `${bgColor}80`
-                                        : bgColor,
-                                      width: `${Math.min(weight, 100)}%`,
-                                    }}
-                                  ></div>
-                                </div>
-                                <span>Worth: {weight}</span>
-                              </div>
-                            )}
+                          <div className={cn(
+                            "text-sm font-medium",
+                            isDarkMode ? "text-white" : "text-gray-600"
+                          )}>
+                            {formattedDate}
                           </div>
+                        </div>
+                        <div>
+                          <div
+                            className={cn(
+                              "font-semibold",
+                              completed ? "line-through" : "",
+                              isDarkMode ? "text-white" : "text-gray-900"
+                            )}
+                            style={{ color: completed ? bgColor : '' }}
+                          >
+                            {event.title}
+                          </div>
+                          {hasWeight && (
+                            <div
+                              className={cn(
+                                "text-xs mt-1 flex items-center",
+                                completed
+                                  ? isDarkMode ? "text-white" : "text-gray-400"
+                                  : isDarkMode ? "text-white" : "text-gray-600"
+                              )}
+                            >
+                              <div className={cn(
+                                "w-20 h-1.5 rounded-full overflow-hidden mr-2",
+                                isDarkMode ? "bg-gray-700" : "bg-gray-200"
+                              )}>
+                                <div
+                                  className="h-full rounded-full"
+                                  style={{
+                                    backgroundColor: completed
+                                      ? `${bgColor}80`
+                                      : bgColor,
+                                    width: `${Math.min(weight, 100)}%`,
+                                  }}
+                                ></div>
+                              </div>
+                              <span>Worth: {weight}</span>
+                            </div>
+                          )}
                         </div>
                         {assessmentData?.description && (
                           <div
-                            className={`text-xs italic max-w-[250px] truncate ${
-                              completed ? 'text-gray-400' : 'text-gray-500'
-                            }`}
+                            className={cn(
+                              "text-xs italic max-w-[250px] truncate",
+                              completed
+                                ? isDarkMode ? "text-white" : "text-gray-400"
+                                : isDarkMode ? "text-white" : "text-gray-500"
+                            )}
                           >
                             {assessmentData.description}
                           </div>
@@ -862,7 +921,10 @@ type DaySchedule = {
                 })}
               </div>
             ) : (
-              <div className="text-center text-gray-500">
+              <div className={cn(
+                "text-center",
+                isDarkMode ? "text-white" : "text-gray-500"
+              )}>
                 No assessments or deadlines found
               </div>
             )}
@@ -872,6 +934,22 @@ type DaySchedule = {
           </div>
         </div>
       </div>
+      {/* Move the dark mode toggle button to be rendered last */}
+      <button
+        onClick={toggleTheme}
+        className={cn(
+          "fixed top-4 right-4 p-2 rounded-full transition-colors z-[9999]",
+          isDarkMode 
+            ? "bg-gray-800 hover:bg-gray-700 text-gray-200 shadow-lg" 
+            : "bg-white hover:bg-gray-100 text-gray-900 shadow-lg"
+        )}
+      >
+        {isDarkMode ? (
+          <Sun className="w-5 h-5" />
+        ) : (
+          <Moon className="w-5 h-5" />
+        )}
+      </button>
     </div>
   );
 }

@@ -8,10 +8,13 @@ import { toast } from "sonner";
 import { api } from "@/services/api";
 import type { Syllabus } from "@/types/syllabus";
 import { eventEmitter } from "@/utils/eventEmitter";
+import { useTheme } from "@/hooks/use-theme";
+import { cn } from "@/lib/utils";
 
 export default function RenameSyllabus() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { isDarkMode } = useTheme();
   const [title, setTitle] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [originalTitle, setOriginalTitle] = useState("");
@@ -92,70 +95,92 @@ export default function RenameSyllabus() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-pulse text-primary">Loading...</div>
+      <div className={cn(
+        "min-h-screen flex items-center justify-center",
+        isDarkMode ? "bg-[#191919]" : "bg-white"
+      )}>
+        <div className={cn(
+          "animate-pulse",
+          isDarkMode ? "text-gray-200" : "text-primary"
+        )}>Loading...</div>
       </div>
     );
   }
 
   return (
-    <div
-      className="container w-full mx-auto flex flex-col justify-center items-center min-h-screen py-8"
-      style={{
-        backgroundColor: "#f8f9fa",
-        backgroundImage: `
-          radial-gradient(circle at center, rgba(255,255,255,0) 0%, white 95%),
-          repeating-linear-gradient(0deg, rgba(0,0,0,0.05) 0, rgba(0,0,0,0.05) 1px, transparent 1px, transparent 25px),
-          repeating-linear-gradient(90deg, rgba(0,0,0,0.05) 0, rgba(0,0,0,0.05) 1px, transparent 1px, transparent 25px)
-        `,
-        backgroundSize: "cover, 25px 25px, 25px 25px",
-      }}
-    >
-      <Card className="max-w-xl w-[95%] sm:w-[85%] md:w-[70%] lg:w-[60%] mx-auto shadow-lg rounded-2xl overflow-hidden bg-white border border-gray-100">
-        <CardContent className="p-6">
-          <h1 className="text-2xl font-extrabold mb-3 text-center flex items-center justify-center gap-2 text-gray-800">
-            <Edit className="h-5 w-5 text-blue-600" />
-            Name Your Syllabus
-          </h1>
-          <p className="text-center text-gray-600 text-sm font-medium mb-6">
-            Give your syllabus a custom name to help you identify it easily
-          </p>
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <div className="relative">
-                <Input
-                  type="text"
-                  placeholder="Enter syllabus name"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                  autoFocus
-                />
-                <FileText className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-              </div>
-              {originalTitle && (
-                <p className="text-sm text-gray-500 text-center">
-                  Original name: {originalTitle}
-                </p>
-              )}
+    <div className={cn(
+      "min-h-screen flex items-center justify-center p-4",
+      isDarkMode ? "bg-[#191919]" : "bg-white"
+    )}>
+      <Card className={cn(
+        "w-full max-w-md",
+        isDarkMode ? "bg-[#202020] border-gray-700" : "bg-white border-gray-200"
+      )}>
+        <CardContent className="pt-6">
+          <div className="flex flex-col items-center space-y-4">
+            <div className="flex items-center gap-2">
+              <FileText className={cn(
+                "h-6 w-6",
+                isDarkMode ? "text-gray-200" : "text-gray-800"
+              )} />
+              <h2 className={cn(
+                "text-xl font-semibold",
+                isDarkMode ? "text-gray-200" : "text-gray-800"
+              )}>Rename Syllabus</h2>
             </div>
 
-            <Button
-              type="submit"
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200 transform hover:scale-[1.02]"
-              disabled={isSubmitting || !title.trim()}
-            >
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="h-5 w-5 animate-spin mr-2" />
-                  Saving...
-                </>
-              ) : (
-                "Save Name"
-              )}
-            </Button>
-          </form>
+            <form onSubmit={handleSubmit} className="space-y-4 w-full">
+              <div className="space-y-2">
+                <div className="relative">
+                  <Input
+                    type="text"
+                    placeholder="Enter syllabus name"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    className={cn(
+                      "w-full pl-10 pr-4 py-2 text-base rounded-lg transition-all",
+                      isDarkMode 
+                        ? "bg-[#202020] border-gray-700 text-gray-200 placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
+                        : "border-gray-300 text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    )}
+                    autoFocus
+                  />
+                  <FileText className={cn(
+                    "absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5",
+                    isDarkMode ? "text-gray-400" : "text-gray-400"
+                  )} />
+                </div>
+                {originalTitle && (
+                  <p className={cn(
+                    "text-sm text-center",
+                    isDarkMode ? "text-gray-400" : "text-gray-500"
+                  )}>
+                    Original name: {originalTitle}
+                  </p>
+                )}
+              </div>
+
+              <Button
+                type="submit"
+                className={cn(
+                  "w-full font-semibold py-2 px-4 rounded-lg transition-all duration-200 transform hover:scale-[1.02]",
+                  isDarkMode 
+                    ? "bg-blue-600 hover:bg-blue-700 text-white" 
+                    : "bg-blue-600 hover:bg-blue-700 text-white"
+                )}
+                disabled={isSubmitting || !title.trim()}
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="h-5 w-5 animate-spin mr-2" />
+                    Saving...
+                  </>
+                ) : (
+                  "Save Name"
+                )}
+              </Button>
+            </form>
+          </div>
         </CardContent>
       </Card>
     </div>

@@ -2,6 +2,8 @@ import React, { useEffect, useState } from "react";
 import { Clock, MapPin, ChevronRight, ExternalLink } from "lucide-react";
 import { Link, useParams } from "react-router-dom";
 import type { Instructor, ClassSchedule } from "@/types/syllabus";
+import { cn } from "@/lib/utils";
+import { useTheme } from "@/hooks/use-theme";
 
 interface CourseInfoProps {
   instructors: Instructor[];
@@ -11,6 +13,7 @@ interface CourseInfoProps {
 export function CourseInfo({ instructors, classSchedule }: CourseInfoProps) {
   const { id } = useParams();
   const [themeColor, setThemeColor] = useState('#3b82f6'); // Default blue
+  const { isDarkMode } = useTheme();
 
   useEffect(() => {
     // Initialize theme color from localStorage with the correct key format
@@ -42,69 +45,104 @@ export function CourseInfo({ instructors, classSchedule }: CourseInfoProps) {
   };
 
   return (
-    <div className="space-y-4">
-      <h3 className="text-xl font-semibold mb-4">
-        <span>Instructors & TAs</span>
-      </h3>
-      {instructors && instructors.length > 0 ? (
-        <div className="space-y-3">
+    <div className="space-y-6">
+      <div>
+        <h3 className={cn(
+          "text-xl font-semibold mb-4",
+          isDarkMode ? "text-white" : "text-gray-900"
+        )}>
+          Instructors & TAs
+        </h3>
+        <div className="space-y-4">
           {instructors.map((instructor, index) => (
-            <div key={index} className="border-2 border-gray-100 rounded-lg p-4">
+            <div key={index} className={cn(
+              "rounded-lg p-4 transition-all duration-200",
+              isDarkMode 
+                ? "border-2 border-gray-50/5" 
+                : "border border-gray-200 shadow-md hover:shadow-lg bg-white"
+            )}>
               <div className="flex items-center justify-between">
-                <div className="font-medium">{instructor.name}</div>
+                <div className={cn(
+                  "font-medium",
+                  isDarkMode ? "text-white" : "text-gray-900"
+                )}>{instructor.name}</div>
                 {instructor.name && (
                   <a 
                     href={getRateMyProfessorUrl(instructor.name)}
                     target="_blank" 
                     rel="noopener noreferrer"
-                    className="text-xs flex items-center gap-1 hover:opacity-80 transition-opacity" 
-                    style={{ 
-                      color: themeColor,
-                      fontWeight: 500
-                    }}
+                    className={cn(
+                      "text-sm flex items-center gap-1 px-2 py-1 rounded-md transition-all duration-200",
+                      isDarkMode 
+                        ? "hover:opacity-80" 
+                        : "hover:bg-gray-50"
+                    )}
+                    style={{ color: themeColor }}
                   >
-                    <span>Rate My Professor</span>
-                    <ExternalLink className="h-3 w-3" style={{ color: themeColor }} />
+                    Rate My Professor
+                    <ExternalLink className="h-3 w-3" />
                   </a>
                 )}
               </div>
               {instructor.email && (
-                <div className="text-sm text-gray-500">{instructor.email}</div>
+                <div className={cn(
+                  "text-sm mt-1",
+                  isDarkMode ? "text-gray-400" : "text-gray-500"
+                )}>{instructor.email}</div>
               )}
               {instructor.office && (
-                <div className="text-sm text-gray-500">Office: {instructor.office}</div>
+                <div className={cn(
+                  "text-sm mt-1",
+                  isDarkMode ? "text-white" : "text-gray-500"
+                )}>Office: {instructor.office}</div>
               )}
               {instructor.officeHours && (
-                <div className="text-sm text-gray-500">Hours: {instructor.officeHours}</div>
+                <div className={cn(
+                  "text-sm mt-1",
+                  isDarkMode ? "text-white" : "text-gray-500"
+                )}>Hours: {instructor.officeHours}</div>
               )}
             </div>
           ))}
         </div>
-      ) : (
-        <div className="text-gray-500 italic">No instructor information available</div>
-      )}
+      </div>
 
-      {/* Class Times Section */}
-      <div className="mt-8">
-        <h3 className="text-xl font-semibold mb-4">
-          <span>Class Schedule</span>
+      <div>
+        <h3 className={cn(
+          "text-xl font-semibold mb-4",
+          isDarkMode ? "text-white" : "text-gray-900"
+        )}>
+          Class Schedule
         </h3>
-        {classSchedule ? (
-          <div className="border-2 border-gray-100 rounded-lg p-4">
-            <div className="space-y-2">
-              <div className="flex items-center gap-3">
-                <Clock className="w-4 h-4 text-gray-400" />
-                <span className="text-gray-700">{classSchedule.meeting_days_times}</span>
-              </div>
-              <div className="flex items-center gap-3 mt-2 pt-2 border-t border-gray-100">
-                <MapPin className="w-4 h-4 text-gray-400" />
-                <span className="text-gray-700">{classSchedule.location}</span>
-              </div>
+        <div className={cn(
+          "rounded-lg p-4 transition-all duration-200",
+          isDarkMode 
+            ? "border-2 border-gray-50/5" 
+            : "border border-gray-200 shadow-md hover:shadow-lg bg-white"
+        )}>
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <Clock className={cn(
+                "h-4 w-4",
+                isDarkMode ? "text-gray-400" : "text-gray-500"
+              )} />
+              <span className={cn(
+                isDarkMode ? "text-gray-400" : "text-gray-900"
+              )}>{classSchedule?.meeting_days_times}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <MapPin className={cn(
+                "h-7 w-7",
+                isDarkMode ? "text-gray-400" : "text-gray-500"
+              )} />
+              <span className={cn(
+                isDarkMode ? "text-gray-400" : "text-gray-500"
+              )}>
+                {classSchedule?.location || "No class meeting location available"}
+              </span>
             </div>
           </div>
-        ) : (
-          <div className="text-gray-500 italic">No class schedule available</div>
-        )}
+        </div>
       </div>
     </div>
   );
