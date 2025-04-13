@@ -16,17 +16,19 @@ export const signUp = async (req: Request, res: Response) => {
     const { email, password, firstName, lastName } = req.body;
 
     // Sign up with Supabase
-    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          first_name: firstName,
-          last_name: lastName,
+    const { data: signUpData, error: signUpError } = await supabase.auth.signUp(
+      {
+        email,
+        password,
+        options: {
+          data: {
+            first_name: firstName,
+            last_name: lastName,
+          },
+          emailRedirectTo: `${process.env.CLIENT_URL}/auth/verify-email`,
         },
-        emailRedirectTo: `${process.env.CLIENT_URL}/auth/verify-email`
-      },
-    });
+      }
+    );
 
     if (signUpError) {
       console.error('Supabase sign up error:', signUpError);
@@ -34,10 +36,11 @@ export const signUp = async (req: Request, res: Response) => {
     }
 
     console.log('Sign up successful:', { userId: signUpData.user?.id });
-    res.status(201).json({ 
+    res.status(201).json({
       user: signUpData.user,
-      message: 'Registration successful. Please check your email to verify your account.',
-      requiresVerification: true
+      message:
+        'Registration successful. Please check your email to verify your account.',
+      requiresVerification: true,
     });
   } catch (error) {
     console.error('Sign up error:', error);
@@ -73,7 +76,7 @@ export const signOut = async (req: Request, res: Response) => {
   try {
     console.log('Sign out request received');
     const { error } = await supabase.auth.signOut();
-    
+
     if (error) {
       console.error('Supabase sign out error:', error);
       return res.status(500).json({ message: error.message });
@@ -103,10 +106,27 @@ export const googleAuth = async (req: Request, res: Response) => {
       return res.status(401).json({ message: error.message });
     }
 
+    // Get the user's profile data from Google
+    const user = data.user;
+    if (user) {
+      // Update the user's metadata with their Google profile data
+      const { error: updateError } = await supabase.auth.updateUser({
+        data: {
+          first_name: user.user_metadata?.full_name?.split(' ')[0] || '',
+          last_name:
+            user.user_metadata?.full_name?.split(' ').slice(1).join(' ') || '',
+        },
+      });
+
+      if (updateError) {
+        console.error('Error updating user metadata:', updateError);
+      }
+    }
+
     console.log('Google auth successful:', { userId: data.user?.id });
     res.json({ user: data.user });
   } catch (error) {
     console.error('Google auth error:', error);
     res.status(500).json({ message: 'Error authenticating with Google' });
   }
-}; 
+};

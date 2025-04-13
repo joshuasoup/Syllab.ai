@@ -14,27 +14,33 @@ async function fetchApi<T>(
 ): Promise<T> {
   try {
     console.log(`[API Request] Starting request to: ${endpoint}`);
-    
+
     // Get the current session
     const session = await getSession();
-    console.log('[API Request] Session status:', session ? 'Found' : 'Not found');
-    
+    console.log(
+      '[API Request] Session status:',
+      session ? 'Found' : 'Not found'
+    );
+
     // Add the authorization header if we have a session
     const headers = new Headers({
       ...options.headers,
     });
-    
+
     // Only set Content-Type if the body is not FormData
     if (!(options.body instanceof FormData)) {
       headers.set('Content-Type', 'application/json');
     }
-    
+
     if (session?.access_token) {
       headers.set('Authorization', `Bearer ${session.access_token}`);
       console.log('[API Request] Added authorization header');
     }
 
-    console.log('[API Request] Making fetch request to:', `${BASE_URL}${endpoint}`);
+    console.log(
+      '[API Request] Making fetch request to:',
+      `${BASE_URL}${endpoint}`
+    );
     const response = await fetch(`${BASE_URL}${endpoint}`, {
       ...options,
       credentials: 'include',
@@ -46,8 +52,11 @@ async function fetchApi<T>(
     // If we get a 401, try to refresh the session
     if (response.status === 401) {
       console.log('[API Request] Got 401, attempting to refresh session');
-      const { data: { session: newSession }, error: refreshError } = await supabase.auth.refreshSession();
-      
+      const {
+        data: { session: newSession },
+        error: refreshError,
+      } = await supabase.auth.refreshSession();
+
       // If refresh fails, throw an auth error
       if (refreshError || !newSession?.access_token) {
         console.error('[API Request] Session refresh failed:', refreshError);
@@ -65,7 +74,9 @@ async function fetchApi<T>(
       if (!retryResponse.ok) {
         const errorData = await retryResponse.json().catch(() => null);
         console.error('[API Request] Retry failed:', errorData);
-        throw new Error(errorData?.message || `API error: ${retryResponse.statusText}`);
+        throw new Error(
+          errorData?.message || `API error: ${retryResponse.statusText}`
+        );
       }
       return retryResponse.json();
     }
@@ -73,7 +84,9 @@ async function fetchApi<T>(
     if (!response.ok) {
       const errorData = await response.json().catch(() => null);
       console.error('[API Request] Request failed:', errorData);
-      throw new Error(errorData?.message || `API error: ${response.statusText}`);
+      throw new Error(
+        errorData?.message || `API error: ${response.statusText}`
+      );
     }
 
     const data = await response.json();
@@ -96,29 +109,37 @@ export const api = {
         method: 'POST',
         body: JSON.stringify({ email, password }),
       }),
-    signUp: (email: string, password: string, firstName?: string, lastName?: string) =>
-      fetchApi<{ user: User; requiresVerification?: boolean }>('/auth/sign-up', {
-        method: 'POST',
-        body: JSON.stringify({ email, password, firstName, lastName }),
-      }),
+    signUp: (
+      email: string,
+      password: string,
+      firstName?: string,
+      lastName?: string
+    ) =>
+      fetchApi<{ user: User; requiresVerification?: boolean }>(
+        '/auth/sign-up',
+        {
+          method: 'POST',
+          body: JSON.stringify({ email, password, firstName, lastName }),
+        }
+      ),
     signOut: async () => {
       try {
         // First sign out from our backend
         await fetchApi('/auth/sign-out', { method: 'POST' });
-        
+
         // Sign out from Supabase
         await supabase.auth.signOut();
-        
+
         // Clear any remaining auth data from localStorage
         localStorage.removeItem('sb-access-token');
         localStorage.removeItem('sb-refresh-token');
-        
+
         // Clear all cookies
-        document.cookie.split(';').forEach(cookie => {
+        document.cookie.split(';').forEach((cookie) => {
           const [name] = cookie.split('=');
           document.cookie = `${name.trim()}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
         });
-        
+
         // Force reload the page to clear any remaining state
         window.location.href = '/auth/sign-in';
       } catch (error) {
@@ -145,6 +166,7 @@ export const api = {
         method: 'PATCH',
         body: JSON.stringify(data),
       }),
+    getAll: () => fetchApi<User[]>('/user/all'),
   },
   syllabus: {
     upload: async (file: File): Promise<Syllabus> => {
@@ -161,8 +183,7 @@ export const api = {
       console.log('[API] Fetching syllabus by ID:', id);
       return fetchApi<Syllabus>(`/syllabi/${id}`);
     },
-    delete: (id: string) =>
-      fetchApi(`/syllabi/${id}`, { method: 'DELETE' }),
+    delete: (id: string) => fetchApi(`/syllabi/${id}`, { method: 'DELETE' }),
     getResults: (id: string) =>
       fetchApi<{ results: any }>(`/syllabi/${id}/results`),
     process: async (id: string): Promise<Syllabus> =>
@@ -172,40 +193,46 @@ export const api = {
       console.log('[API] Updating syllabus:', {
         id,
         data: requestBody,
-        method: 'PATCH'
+        method: 'PATCH',
       });
       return fetchApi<Syllabus>(`/syllabi/${id}`, {
         method: 'PATCH',
         body: JSON.stringify(requestBody),
         headers: {
           'Content-Type': 'application/json',
-          'Accept': 'application/json'
+          Accept: 'application/json',
         },
       });
     },
-    addEvent: (id: string, event: { title: string; type: string; location?: string; date: string }) => {
+    addEvent: (
+      id: string,
+      event: { title: string; type: string; location?: string; date: string }
+    ) => {
       console.log('[API] Adding event to syllabus:', {
         id,
         event,
-        method: 'POST'
+        method: 'POST',
       });
       return fetchApi<Syllabus>(`/syllabi/${id}/events`, {
         method: 'POST',
         body: JSON.stringify(event),
         headers: {
           'Content-Type': 'application/json',
-          'Accept': 'application/json'
+          Accept: 'application/json',
         },
       });
     },
     async deleteEvent(syllabusId: string, eventId: string) {
-      const response = await fetch(`${BASE_URL}/syllabi/${syllabusId}/events/${eventId}`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('sb-access-token')}`
+      const response = await fetch(
+        `${BASE_URL}/syllabi/${syllabusId}/events/${eventId}`,
+        {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${localStorage.getItem('sb-access-token')}`,
+          },
         }
-      });
+      );
 
       if (!response.ok) {
         throw new Error('Failed to delete event');
@@ -215,17 +242,19 @@ export const api = {
     },
   },
   chat: {
-  sendMessage: (syllabusId: string, message: string) =>
-    fetchApi<{ response: string }>(`/chat`, {
-      method: 'POST',
-      body: JSON.stringify({ 
-        syllabusId: syllabusId,
-        query: message  // Changed from 'message' to 'query'
-      }),
-    }).then(data => data.response),
-  getHistory: (syllabusId: string) =>
-    fetchApi<{ messages: Array<{ role: string; content: string }> }>(`/syllabi/${syllabusId}/chat`),
-},
+    sendMessage: (syllabusId: string, message: string) =>
+      fetchApi<{ response: string }>(`/chat`, {
+        method: 'POST',
+        body: JSON.stringify({
+          syllabusId: syllabusId,
+          query: message, // Changed from 'message' to 'query'
+        }),
+      }).then((data) => data.response),
+    getHistory: (syllabusId: string) =>
+      fetchApi<{ messages: Array<{ role: string; content: string }> }>(
+        `/syllabi/${syllabusId}/chat`
+      ),
+  },
   folders: {
     create: (name: string, color: string) => {
       console.log('Creating folder:', { name, color });
@@ -261,4 +290,4 @@ export const api = {
       });
     },
   },
-}; 
+};
