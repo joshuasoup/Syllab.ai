@@ -54,15 +54,27 @@ export const getAllUsers = async (req: Request, res: Response) => {
     console.log('Successfully fetched users:', users.users.length);
 
     // Format the users data
-    const formattedUsers = users.users.map((user) => ({
-      id: user.id,
-      email: user.email,
-      firstName: user.user_metadata?.first_name || '',
-      lastName: user.user_metadata?.last_name || '',
-      profilePicture: user.user_metadata?.profilePicture || '',
-      createdAt: user.created_at,
-      lastSignInAt: user.last_sign_in_at,
-    }));
+    const formattedUsers = users.users.map((user) => {
+      // Get name from either first_name/last_name or full_name
+      const firstName =
+        user.user_metadata?.first_name ||
+        user.user_metadata?.full_name?.split(' ')[0] ||
+        '';
+      const lastName =
+        user.user_metadata?.last_name ||
+        user.user_metadata?.full_name?.split(' ').slice(1).join(' ') ||
+        '';
+
+      return {
+        id: user.id,
+        email: user.email,
+        firstName,
+        lastName,
+        profilePicture: user.user_metadata?.profilePicture || '',
+        createdAt: user.created_at,
+        lastSignInAt: user.last_sign_in_at,
+      };
+    });
 
     // Sort users by creation date (newest first)
     formattedUsers.sort(

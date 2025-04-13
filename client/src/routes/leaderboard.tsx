@@ -2,6 +2,10 @@ import { useQuery } from '@tanstack/react-query';
 import { api } from '../../services/api';
 import { User } from '../../types';
 
+interface UserWithXp extends User {
+  xp: number;
+}
+
 export default function Leaderboard() {
   const {
     data: users,
@@ -10,14 +14,10 @@ export default function Leaderboard() {
   } = useQuery({
     queryKey: ['users'],
     queryFn: async () => {
-      console.log('Fetching users...');
       const result = await api.user.getAll();
-      console.log('Users fetched:', result);
       return result;
     },
   });
-
-  console.log('Current state:', { users, isLoading, error });
 
   if (isLoading) {
     return (
@@ -55,6 +55,36 @@ export default function Leaderboard() {
     );
   }
 
+  // Calculate XP and sort users
+  const usersWithXp: UserWithXp[] = (users || []).map((user) => ({
+    ...user,
+    xp: Math.floor(
+      (Date.now() - new Date(user.createdAt).getTime()) / (1000 * 60 * 60 * 24)
+    ),
+  }));
+
+  console.log(
+    'Before sorting:',
+    usersWithXp?.map((u) => u.xp)
+  );
+  const sortedUsers = [...(usersWithXp || [])].sort((a, b) => a.xp - b.xp);
+  console.log(
+    'After sorting:',
+    sortedUsers.map((u) => u.xp)
+  );
+
+  // Remove duplicates by keeping only the highest XP entry for each email
+  const uniqueUsers = sortedUsers.reduce((acc: UserWithXp[], current) => {
+    const existingUser = acc.find((user) => user.email === current.email);
+    if (!existingUser) {
+      acc.push(current);
+    } else if (current.xp > existingUser.xp) {
+      acc = acc.filter((user) => user.email !== current.email);
+      acc.push(current);
+    }
+    return acc;
+  }, []);
+
   return (
     <div className="min-h-screen bg-white p-8">
       <div className="max-w-4xl mx-auto">
@@ -79,7 +109,7 @@ export default function Leaderboard() {
 
             {/* Leaderboard List */}
             <div className="border-t border-gray-200 pt-6">
-              {users?.map((user, index) => (
+              {uniqueUsers.map((user, index) => (
                 <div
                   key={user.id}
                   className="flex items-center py-3 hover:bg-gray-50 transition-colors"
@@ -113,13 +143,7 @@ export default function Leaderboard() {
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className="font-medium">
-                      {Math.floor(
-                        (Date.now() - new Date(user.createdAt).getTime()) /
-                          (1000 * 60 * 60 * 24)
-                      )}{' '}
-                      XP
-                    </div>
+                    <div className="font-medium">{user.xp} pts</div>
                     <div className="text-sm text-gray-500">Days Active</div>
                   </div>
                 </div>
