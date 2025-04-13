@@ -1,13 +1,16 @@
-import express from 'express';
-import { getCurrentUser, updateUserProfile } from '../controllers/userController';
+import { Router } from 'express';
 import { auth } from '../middleware/auth';
+import {
+  getCurrentUser,
+  updateUserProfile,
+  getAllUsers,
+} from '../controllers/userController';
 
-const router = express.Router();
+const router = Router();
 
-// Get current user
+// Protected routes
 router.get('/user', auth, getCurrentUser);
-
-// Update user profile
 router.patch('/user', auth, updateUserProfile);
+router.get('/user/all', auth, getAllUsers);
 
-export default router; 
+export default router;

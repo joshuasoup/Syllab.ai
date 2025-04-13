@@ -1,11 +1,15 @@
 import React from 'react';
 import { Outlet, redirect } from 'react-router-dom';
 import { Suspense } from 'react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import '@styles/app.css';
 import { api } from '@/services/api';
 import { User } from '@/types/user';
 import { getSession } from '@/lib/supabase';
 import imgUrl from '@images/syllabai-logo.png';
+
+// Create a client
+const queryClient = new QueryClient();
 
 export const links = () => [
   {
@@ -37,11 +41,13 @@ export const loader = async () => {
 
 export default function App() {
   return (
-    <div className="app">
-      <Suspense fallback={<div>Loading...</div>}>
-        <Outlet />
-      </Suspense>
-    </div>
+    <QueryClientProvider client={queryClient}>
+      <div className="app">
+        <Suspense fallback={<div>Loading...</div>}>
+          <Outlet />
+        </Suspense>
+      </div>
+    </QueryClientProvider>
   );
 }
 
