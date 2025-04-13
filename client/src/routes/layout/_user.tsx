@@ -245,6 +245,7 @@ interface DraggableSyllabusProps {
   syllabus: Syllabus;
   folderId?: string;
   className?: string;
+  isCollapsed?: boolean;
 }
 
 const DraggableSyllabus: React.FC<DraggableSyllabusProps> = React.memo(
@@ -283,7 +284,6 @@ const DraggableSyllabus: React.FC<DraggableSyllabusProps> = React.memo(
     const navigate = useNavigate();
 
     const handleClick = (e: React.MouseEvent) => {
-      // Only navigate if we're not dragging
       if (!isDragging) {
         navigate(`/user/syllabus-results/${syllabus.id}`);
       }
@@ -293,10 +293,9 @@ const DraggableSyllabus: React.FC<DraggableSyllabusProps> = React.memo(
       <div
         ref={setNodeRef}
         style={style}
-        className={`group flex items-center px-1 py-1 text-xs font-normal rounded-sm transition-colors text-muted-foreground ${
-          className || ''
-        }
-        ${
+        className={cn(
+          "group flex items-center px-1 py-1 text-xs font-normal rounded-sm transition-colors",
+          className || '',
           isDarkMode
             ? location.pathname === `/user/syllabus-results/${syllabus.id}`
               ? 'bg-gray-100/10 text-gray-200'
@@ -304,14 +303,25 @@ const DraggableSyllabus: React.FC<DraggableSyllabusProps> = React.memo(
             : location.pathname === `/user/syllabus-results/${syllabus.id}`
               ? 'bg-accent/50 text-accent-foreground'
               : 'hover:bg-accent/50 hover:text-accent-foreground'
-        }`}
+        )}
         onClick={handleClick}
         {...attributes}
         {...listeners}
       >
         <div className="flex items-center justify-between w-full">
           <div className="flex items-center flex-grow cursor-pointer">
-            <FileText className="h-4 w-4 mr-1 text-gray-500 flex-shrink-0" />
+            <div className={cn(
+              "p-1 rounded-sm transition-colors",
+              isDarkMode
+                ? location.pathname === `/user/syllabus-results/${syllabus.id}`
+                  ? 'bg-gray-100/10 text-gray-200'
+                  : 'text-gray-400 hover:bg-gray-100/5 hover:text-gray-200'
+                : location.pathname === `/user/syllabus-results/${syllabus.id}`
+                  ? 'bg-accent/50 text-accent-foreground'
+                  : 'hover:bg-accent/50 hover:text-accent-foreground'
+            )}>
+              <FileText className="h-4 w-4 text-gray-500 flex-shrink-0" />
+            </div>
             <span
               className="truncate whitespace-nowrap text-[10px] max-w-[120px] ml-0"
               onDoubleClick={(e) => {
@@ -358,13 +368,16 @@ const DraggableSyllabus: React.FC<DraggableSyllabusProps> = React.memo(
   }
 );
 
-const FolderDropZone: React.FC<{
+interface FolderDropZoneProps {
   folder: Folder;
   onDrop: (syllabusId: string) => void;
   isOpen: boolean;
   onToggle: () => void;
   syllabuses: Syllabus[];
-}> = React.memo(({ folder, onDrop, isOpen, onToggle, syllabuses }) => {
+  isCollapsed?: boolean;
+}
+
+const FolderDropZone: React.FC<FolderDropZoneProps> = React.memo(({ folder, onDrop, isOpen, onToggle, syllabuses }) => {
   const { isDarkMode } = useTheme();
   const { setNodeRef, isOver } = useDroppable({
     id: `folder-${folder.id}`,
@@ -408,7 +421,6 @@ const FolderDropZone: React.FC<{
       .filter((s): s is Syllabus => s !== undefined);
   }, [folder.syllabuses, syllabuses]);
 
-  // Use a callback ref to set both the droppable and sortable refs
   const setRefs = useCallback(
     (node: HTMLDivElement | null) => {
       setNodeRef(node);
@@ -421,70 +433,56 @@ const FolderDropZone: React.FC<{
     <div style={style}>
       <div
         ref={setRefs}
-        className={`flex items-center gap-1 rounded-sm transition-colors cursor-pointer ${
+        className={cn(
+          "flex items-center gap-1 rounded-sm transition-colors cursor-pointer",
           isOver ? 'bg-accent/80 ring-2 ring-accent ring-inset' : ''
-        }`}
+        )}
         {...attributes}
         {...listeners}
         onClick={onToggle}
       >
         <div className="flex items-center gap-1 flex-1">
           <GripVertical className="h-3 w-3 text-gray-400 mr-0.5" />
-          <FolderIcon
-            className="h-4 w-4"
-            style={{
-              color: folder.color,
-              stroke: folder.color,
-              fill: `${folder.color}10`,
-              strokeWidth: 1.5,
-            }}
-          />
-          <span className={cn(
-            "text-xs font-medium",
-            isDarkMode ? "text-white" : "text-gray-700"
+          <div className={cn(
+            "p-1 rounded-sm transition-colors",
+            isDarkMode ? "hover:bg-gray-100/5 hover:text-gray-200" : "hover:bg-accent/50 hover:text-accent-foreground"
           )}>
+            <FolderIcon
+              className="h-4 w-4"
+              style={{
+                color: folder.color,
+                stroke: folder.color,
+                fill: `${folder.color}10`,
+                strokeWidth: 1.5,
+              }}
+            />
+          </div>
+          <span
+            className={cn(
+              "truncate whitespace-nowrap text-[10px] max-w-[120px] ml-0",
+              isDarkMode ? "text-gray-400" : "text-gray-700"
+            )}
+          >
             {folder.name}
           </span>
         </div>
-        <button
+        <ChevronDown
           className={cn(
-            "p-1 rounded-sm transition-colors",
-            isDarkMode ? "hover:bg-gray-100/5" : "hover:bg-gray-100"
+            "h-3 w-3 transition-transform duration-200",
+            isOpen ? "rotate-0" : "-rotate-90",
+            isDarkMode ? "text-gray-400" : "text-gray-700"
           )}
-          onClick={(e) => {
-            e.stopPropagation(); // Prevent duplicate toggle
-            onToggle();
-          }}
-        >
-          <ChevronDown
-            className={cn(
-              "h-3 w-3 transition-transform",
-              isDarkMode ? "text-white" : "text-gray-700",
-              isOpen ? 'rotate-180' : ''
-            )}
-          />
-        </button>
+        />
       </div>
       {isOpen && (
-        <div className="pl-4 space-y-1">
-          {folderSyllabuses.length === 0 ? (
-            <div className="text-[10px] text-gray-400 font-light py-1">
-              Folder is empty
-            </div>
-          ) : (
-            <SortableContext
-              items={folderSyllabuses.map((s) => s.id)}
-              strategy={verticalListSortingStrategy}
-            >
-              {folderSyllabuses.map((syllabus) => (
-                <DraggableSyllabus
-                  key={syllabus.id}
-                  syllabus={syllabus}
-                  folderId={folder.id}
-                />
-              ))}
-            </SortableContext>
-          )}
+        <div className="ml-4 space-y-0.5 mt-0.5">
+          {folderSyllabuses.map((syllabus) => (
+            <DraggableSyllabus
+              key={syllabus.id}
+              syllabus={syllabus}
+              folderId={folder.id}
+            />
+          ))}
         </div>
       )}
     </div>
@@ -740,6 +738,11 @@ const SideBar = ({
         const folder = folders.find((f) => f.id === folderId);
         if (!folder) return;
 
+        // Check if syllabus is actually in this folder
+        if (!folder.syllabuses.includes(syllabusId)) {
+          return;
+        }
+
         const updatedFolder = await api.folders.update(folderId, {
           syllabuses: folder.syllabuses.filter((id) => id !== syllabusId),
         });
@@ -784,6 +787,11 @@ const SideBar = ({
 
     if (!activeData) return;
 
+    // Only allow drops on folders or root
+    if (activeData.type === 'SYLLABUS' && overData?.type !== 'FOLDER' && overData?.type !== 'ROOT') {
+      return;
+    }
+
     // Handle moving to root if dragged to empty space or root drop zone
     if (
       activeData.type === 'SYLLABUS' &&
@@ -795,7 +803,7 @@ const SideBar = ({
       if (sourceFolder) {
         moveSyllabusOutOfFolder(activeData.syllabus.id, sourceFolder.id);
       }
-      return; // Exit early to prevent folder handling
+      return;
     }
 
     // Handle moving between folders
@@ -805,24 +813,22 @@ const SideBar = ({
 
       // Check if syllabus is already in the target folder
       const targetFolder = folders.find((f) => f.id === overData.folder.id);
-      if (
-        targetFolder &&
-        !targetFolder.syllabuses.includes(activeData.syllabus.id)
-      ) {
-        // Check if syllabus is in any folder
-        const sourceFolder = folders.find((f) =>
-          f.syllabuses.includes(activeData.syllabus.id)
-        );
-        // Only move if it's not already in a folder (root) or if it's in a different folder
-        if (!sourceFolder || sourceFolder.id !== targetFolder.id) {
-          // If moving from root to folder, just add to target folder
-          if (!sourceFolder) {
-            moveSyllabusToFolder(activeData.syllabus.id, overData.folder.id);
-          } else {
-            // If moving between folders, first remove from source then add to target
-            moveSyllabusOutOfFolder(activeData.syllabus.id, sourceFolder.id);
-            moveSyllabusToFolder(activeData.syllabus.id, overData.folder.id);
-          }
+      if (!targetFolder) return;
+
+      // Check if syllabus is in any folder
+      const sourceFolder = folders.find((f) =>
+        f.syllabuses.includes(activeData.syllabus.id)
+      );
+
+      // Only move if it's not already in the target folder
+      if (!targetFolder.syllabuses.includes(activeData.syllabus.id)) {
+        // If moving from root to folder, just add to target folder
+        if (!sourceFolder) {
+          moveSyllabusToFolder(activeData.syllabus.id, overData.folder.id);
+        } else if (sourceFolder.id !== targetFolder.id) {
+          // If moving between folders, first remove from source then add to target
+          moveSyllabusOutOfFolder(activeData.syllabus.id, sourceFolder.id);
+          moveSyllabusToFolder(activeData.syllabus.id, overData.folder.id);
         }
       }
     }
@@ -953,18 +959,25 @@ const SideBar = ({
                   className={cn(
                     "group h-8 w-full flex items-center justify-between px-2 mb-3 transition-all duration-300 text-xs rounded-md",
                     isDarkMode 
-                      ? "hover:bg-gray-100/30 hover:text-gray-200 text-gray-300" 
-                      : "hover:bg-red-500/50 hover:text-white text-gray-500"
+                      ? "text-gray-300" 
+                      : "text-gray-500"
                   )}
                   onClick={() => setIsCreatingFolder(true)}
                 >
                   <div className="flex items-center">
-                    <FolderPlus className="h-4 w-4 mr-1" />
-                    <span className="text-xs font-medium transition-colors duration-300">
+                    <div className={cn(
+                      "p-1 rounded-sm transition-colors",
+                      isDarkMode 
+                        ? "hover:bg-gray-100/30 hover:text-gray-200" 
+                        : "hover:bg-red-500/50 hover:text-white"
+                    )}>
+                      <FolderPlus className="h-4 w-4" />
+                    </div>
+                    <span className="text-xs font-medium">
                       Folders
                     </span>
                   </div>
-                  <span className="text-xs transition-colors duration-300">
+                  <span className="text-xs">
                     New Folder
                   </span>
                 </Button>
@@ -1056,7 +1069,10 @@ const SideBar = ({
               >
                 <div className="space-y-1 mt-2 -ml-1">
                   {rootSyllabuses.map((syllabus) => (
-                    <DraggableSyllabus key={syllabus.id} syllabus={syllabus} />
+                    <DraggableSyllabus 
+                      key={syllabus.id} 
+                      syllabus={syllabus} 
+                    />
                   ))}
                 </div>
               </SortableContext>
@@ -1165,7 +1181,7 @@ const UserLayout = () => {
                 isDarkMode 
                   ? "bg-gray-800 hover:bg-gray-700 border-gray-700" 
                   : "bg-white hover:bg-gray-50 border-gray-200",
-                isSidebarCollapsed ? '-right-3 top-4' : '-right-3 top-4'
+                isSidebarCollapsed ? 'right-2 top-4' : 'right-2 top-4'
               )}
             >
               {isSidebarCollapsed ? (
