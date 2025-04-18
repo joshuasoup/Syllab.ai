@@ -3,11 +3,13 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Upload } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion'; // Import AnimatePresence
 import AnchorMenu from '@/components/dashboard/AnchorMenu';
 import TodoList from '@/components/dashboard/pages/TodoList';
 import Leaderboard, { LeaderboardEntry } from '@/components/dashboard/pages/Leaderboard';
-import EnrolledCourses, { EnrolledCourse } from '@/components/dashboard/pages/Courses';
+import EnrolledCourses from '@/components/dashboard/pages/Courses';
 import HelpSection from '@/components/dashboard/pages/HelpSection';
+import '@styles/dashboard.css'
 
 export default function Dashboard() {
   // Sample leaderboard data (already provided)
@@ -19,50 +21,50 @@ export default function Dashboard() {
     { id: '5', name: 'Jamie L.', score: 250, rank: 5 },
   ]);
 
-  // Sample data for enrolled courses
-  const enrolledCourses: EnrolledCourse[] = [
-    { id: '1', title: 'Introduction to Programming', instructor: 'Jane Smith', progress: 80 },
-    { id: '2', title: 'Data Structures', instructor: 'John Doe', progress: 60 },
-    { id: '3', title: 'Algorithms', instructor: 'Alice Brown', progress: 45 },
-  ];
-
   // Create refs for each full-screen section
   const todoListRef = useRef<HTMLDivElement>(null);
   const leaderboardRef = useRef<HTMLDivElement>(null);
   const enrolledCoursesRef = useRef<HTMLDivElement>(null);
   const helpRef = useRef<HTMLDivElement>(null);
+  
+  // Store all refs in an array for easier access
+  const sectionRefs = [todoListRef, leaderboardRef, enrolledCoursesRef, helpRef];
 
   // Track active section (0: TodoList, 1: Leaderboard, 2: Courses, 3: Help)
   const [activeDot, setActiveDot] = useState<number>(0);
+  
+  // Track if we're currently animating
+  const [isAnimating, setIsAnimating] = useState(false);
+
+  // Smooth scroll animation function
+  const smoothScrollTo = (ref: React.RefObject<HTMLDivElement>, index: number) => {
+    if (ref.current && !isAnimating) {
+      setIsAnimating(true);
+      
+      // Set active dot before animation starts
+      setActiveDot(index);
+      
+      // Get the target position
+      const targetPosition = ref.current.offsetTop;
+      
+      // Use Framer Motion's animate function to animate the scroll
+      window.scrollTo({
+        top: targetPosition,
+        behavior: 'smooth'
+      });
+      
+      // Reset animation lock after animation completes
+      setTimeout(() => {
+        setIsAnimating(false);
+      }, 800); // Animation duration
+    }
+  };
 
   // Individual scroll functions for each section
-  const scrollToTodoList = () => {
-    if (todoListRef.current) {
-      todoListRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      setActiveDot(0);
-    }
-  };
-
-  const scrollToLeaderboard = () => {
-    if (leaderboardRef.current) {
-      leaderboardRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      setActiveDot(1);
-    }
-  };
-
-  const scrollToCourses = () => {
-    if (enrolledCoursesRef.current) {
-      enrolledCoursesRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      setActiveDot(2);
-    }
-  };
-
-  const scrollToHelp = () => {
-    if (helpRef.current) {
-      helpRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      setActiveDot(3);
-    }
-  };
+  const scrollToTodoList = () => smoothScrollTo(todoListRef, 0);
+  const scrollToLeaderboard = () => smoothScrollTo(leaderboardRef, 1);
+  const scrollToCourses = () => smoothScrollTo(enrolledCoursesRef, 2);
+  const scrollToHelp = () => smoothScrollTo(helpRef, 3);
 
   // Set up an intersection observer to update the active section indicator on scroll
   useEffect(() => {
@@ -101,14 +103,30 @@ export default function Dashboard() {
     };
   }, []);
 
+  // Animation variants
+  const sectionVariants = {
+    hidden: { opacity: 0, y: 50 },
+    visible: { 
+      opacity: 1, 
+      y: 0,
+      transition: { 
+        duration: 0.7,
+        ease: "easeInOut"
+      }
+    },
+    exit: { 
+      opacity: 0,
+      y: -50,
+      transition: { 
+        duration: 0.5,
+        ease: "easeInOut"
+      }
+    }
+  };
+
   return (
     <div className="relative overflow-hidden">
-      {/* Decorative Elements */}
-      <div className="fixed inset-0 pointer-events-none z-0">
-        <div className="w-[872px] h-[874px] right-[-400px] bottom-[-400px] absolute bg-[radial-gradient(ellipse_50.00%_50.00%_at_50.00%_50.00%,_rgba(37,_99,_235,_0.61)_0%,_rgba(255,_255,_255,_0.61)_100%)] rounded-full"></div>
-        <div className="w-[1207px] h-[1221px] left-[-785px] top-[-661px] absolute bg-[radial-gradient(ellipse_50.00%_50.00%_at_50.00%_50.00%,_#2563EB_0%,_rgba(255,_255,_255,_0.61)_100%)] rounded-full"></div>
-      </div>
-
+  
       {/* Upload Syllabus Button - Fixed position */}
       <div className="fixed top-6 left-6 z-20">
         <Link to="/user/syllabus-upload">
@@ -122,30 +140,50 @@ export default function Dashboard() {
       {/* Full-screen Sections */}
       {/* 1. TodoList Section */}
       <section ref={todoListRef} className="h-screen w-full flex items-center justify-center">
-        <div className="max-w-3xl w-full px-6">
+        <motion.div 
+          className="max-w-3xl w-full px-6"
+          initial="hidden"
+          animate={activeDot === 0 ? "visible" : "hidden"}
+          variants={sectionVariants}
+        >
           <TodoList />
-        </div>
+        </motion.div>
       </section>
 
       {/* 2. Leaderboard Section */}
       <section ref={leaderboardRef} className="h-screen w-full flex items-center justify-center">
-        <div className="max-w-3xl w-full px-6">
+        <motion.div 
+          className="max-w-3xl w-full px-6"
+          initial="hidden"
+          animate={activeDot === 1 ? "visible" : "hidden"}
+          variants={sectionVariants}
+        >
           <Leaderboard leaderboard={leaderboard} />
-        </div>
+        </motion.div>
       </section>
 
       {/* 3. Enrolled Courses Section */}
       <section ref={enrolledCoursesRef} className="h-screen w-full flex items-center justify-center">
-        <div className="max-w-3xl w-full px-6">
-          <EnrolledCourses courses={enrolledCourses} />
-        </div>
+        <motion.div 
+          className="max-w-3xl w-full px-6"
+          initial="hidden"
+          animate={activeDot === 2 ? "visible" : "hidden"}
+          variants={sectionVariants}
+        >
+          <EnrolledCourses  />
+        </motion.div>
       </section>
 
       {/* 4. Help Section */}
       <section ref={helpRef} className="h-screen w-full flex items-center justify-center">
-        <div className="max-w-3xl w-full px-6">
+        <motion.div 
+          className="max-w-3xl w-full px-6"
+          initial="hidden"
+          animate={activeDot === 3 ? "visible" : "hidden"}
+          variants={sectionVariants}
+        >
           <HelpSection />
-        </div>
+        </motion.div>
       </section>
 
       {/* Anchor Menu - Fixed position */}

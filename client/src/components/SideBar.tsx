@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Link, useLocation, useParams } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -8,9 +8,7 @@ import {
   DropdownMenuTrigger,
   
 } from "@/components/ui/dropdown-menu";
-import { Toaster } from "@/components/ui/sonner";
 import { ChevronDown, ChevronRight, FileText, LogOut, Menu, User as UserIcon, Folder } from "lucide-react";
-import CommandKBadge from "@/components/shared/CommandKBadge";
 import { api } from "@/services/api";
 import type { User } from "@/types/user";
 import type { Syllabus } from "@/types/syllabus";
