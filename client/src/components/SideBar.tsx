@@ -32,7 +32,7 @@ const UserMenu = ({ user }: UserMenuProps) => {
     ).toUpperCase();
   };
 
-  const handleSignOut = async () => {
+   `const handleSignOut = async () => {
     await api.auth.signOut();
     navigate('/auth/sign-in');
   };

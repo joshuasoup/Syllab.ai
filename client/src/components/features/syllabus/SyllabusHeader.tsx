@@ -6,6 +6,7 @@ import {
   Trash2,
   MessageCircle,
   Palette,
+  Download,
 } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
@@ -14,6 +15,10 @@ import ChatbotDialog from '@/components/features/chat/ChatbotDialog';
 import { useTheme } from '@/hooks/use-theme';
 import { cn } from '@/lib/utils';
 import type { Syllabus } from '@/types/syllabus';
+
+// Import the icons (using corrected path)
+import appleIconUrl from '@/images/appleIcon.png';
+import googleIconUrl from '@/images/googleIcon.webp';
 
 interface SyllabusHeaderProps {
   syllabus: Syllabus;
@@ -78,45 +83,21 @@ const SyllabusHeader: React.FC<SyllabusHeaderProps> = ({
           </h1>
         </div>
         <div className="flex items-center flex-nowrap gap-2 mt-1 lg:mt-0">
-          <div
-            className={cn(
-              'flex items-center gap-1 px-2 py-1.5 rounded-full cursor-pointer transition-colors whitespace-nowrap text-xs',
-              isDarkMode
-                ? 'bg-gray-800/50 hover:bg-gray-800/70 text-gray-200'
-                : 'bg-white/70 hover:bg-white/90 text-gray-900'
-            )}
-            onClick={onDownloadCalendar}
-          >
-            <CalendarIcon className="w-3 h-3 flex-shrink-0 text-blue-500" />
-            <span className="font-medium">Add to Your Calendar</span>
-          </div>
-          <DeleteSyllabusButton
-            syllabusId={syllabus.id}
+          <Button
             variant="ghost"
             className={cn(
-              'flex items-center gap-1 px-2 py-1.5 rounded-full transition-colors whitespace-nowrap text-xs h-auto',
+              "flex items-center gap-1.5 px-4 py-2 rounded-full transition-colors whitespace-nowrap text-sm h-auto",
               isDarkMode
-                ? 'bg-gray-800/50 hover:bg-gray-800/70 text-gray-200'
-                : 'bg-white/70 hover:bg-white/90 text-gray-900'
+                ? "bg-gray-800/50 hover:bg-gray-800/70 text-gray-200"
+                : "bg-white/70 hover:bg-white/90 text-gray-900"
             )}
-            redirectTo="/user/syllabus-upload"
+            onClick={onDownloadCalendar}
+            aria-label="Add calendar events to your calendar (.ics download)"
           >
-            <Trash2 className="w-3 h-3 flex-shrink-0 text-red-500 mr-1" />
-            <span className="font-medium">Delete</span>
-          </DeleteSyllabusButton>
-          <div
-            className="flex items-center gap-1 bg-white/70 px-2 py-1.5 rounded-full cursor-pointer hover:bg-white/90 transition-colors whitespace-nowrap text-xs"
-            onClick={() => setChatOpen(true)}
-          >
-            <MessageCircle className="w-3 h-3 flex-shrink-0 text-purple-500" />
-            <span className="font-medium">Chat</span>
-          </div>
-          <ChatbotDialog
-            syllabusId={syllabus.id}
-            open={chatOpen}
-            onOpenChange={setChatOpen}
-            trigger={null}
-          />
+            Add to Calendar
+            <img src={googleIconUrl} alt="Google Calendar icon" className="h-5 w-5" />
+            <img src={appleIconUrl} alt="Apple Calendar icon" className="h-5 w-5" />
+          </Button>
         </div>
       </div>
       <p
