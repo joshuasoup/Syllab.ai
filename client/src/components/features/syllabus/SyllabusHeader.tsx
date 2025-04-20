@@ -7,6 +7,8 @@ import {
   MessageCircle,
   Palette,
   Download,
+  Clock,
+  MapPin,
 } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
@@ -35,6 +37,7 @@ const SyllabusHeader: React.FC<SyllabusHeaderProps> = ({
 }) => {
   const { isDarkMode } = useTheme();
   const [chatOpen, setChatOpen] = useState(false);
+  const schedule = syllabus.highlights?.class_schedule;
 
   const colorOptions = [
     { color: '#3b82f6', name: 'Blue' },
@@ -100,15 +103,31 @@ const SyllabusHeader: React.FC<SyllabusHeaderProps> = ({
           </Button>
         </div>
       </div>
-      <p
+      <div 
         className={cn(
-          'font-medium text-sm mb-2',
+          'font-medium text-sm mb-2 flex items-center gap-x-4 gap-y-1 flex-wrap',
           isDarkMode ? 'text-gray-300' : 'text-white/90'
         )}
       >
-        Welcome to {syllabus.highlights?.course_info?.name || 'your course'}! You
-        are on track to complete your course.
-      </p>
+        {schedule && (schedule.meeting_days_times || schedule.location) ? (
+          <>
+            {schedule.meeting_days_times && (
+              <span className="flex items-center gap-1.5">
+                <Clock className="h-3.5 w-3.5 flex-shrink-0" />
+                <span>{schedule.meeting_days_times}</span>
+              </span>
+            )}
+            {schedule.location && (
+              <span className="flex items-center gap-1.5">
+                <MapPin className="h-3.5 w-3.5 flex-shrink-0" />
+                <span>{schedule.location}</span>
+              </span>
+            )}
+          </>
+        ) : (
+          <span>Class schedule details not available.</span>
+        )}
+      </div>
       <Popover>
         <PopoverTrigger asChild>
           <div

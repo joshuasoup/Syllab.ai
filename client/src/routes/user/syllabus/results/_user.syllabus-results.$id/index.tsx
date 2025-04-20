@@ -13,6 +13,8 @@ import { Sun, Moon } from 'lucide-react';
 import SyllabusHeader from '@/components/features/syllabus/SyllabusHeader';
 import CourseInfoSection from '@/components/features/syllabus/CourseInfoSection';
 import AssessmentsList from '@/components/features/syllabus/AssessmentsList';
+// Import the new chart component
+import AssessmentBreakdownChart from '@/components/features/syllabus/AssessmentBreakdownChart';
 
 export default function SyllabusResults() {
   const { id } = useParams();
@@ -189,8 +191,16 @@ export default function SyllabusResults() {
           />
         </div>
 
-        {/* Course Info Section - moved to the right column */}
+        {/* Course Info Section & Chart - moved to the right column */}
         <div className="lg:col-span-1 flex flex-col gap-6"> 
+          {/* Add the breakdown chart here */}
+          {/* Ensure data.grading_breakdown exists and is passed */}
+          {data.grading_breakdown && data.grading_breakdown.length > 0 && (
+            <AssessmentBreakdownChart 
+              data={data.grading_breakdown} 
+              bgColor={bgColor} 
+            />
+          )}
           <CourseInfoSection
             courseInfo={data.course_info}
             instructors={data.instructors || []}
