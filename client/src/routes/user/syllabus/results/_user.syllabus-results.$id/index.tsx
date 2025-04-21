@@ -7,12 +7,14 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useTheme } from '@/hooks/use-theme';
 import type { AuthOutletContext } from "@/routes/layout/_user";
+import { Sun, Moon } from 'lucide-react';
 
 // Importing the new smaller components:
 import SyllabusHeader from '@/components/features/syllabus/SyllabusHeader';
-import CalendarWidget from '@/components/features/syllabus/CalendarWidget';
 import CourseInfoSection from '@/components/features/syllabus/CourseInfoSection';
 import AssessmentsList from '@/components/features/syllabus/AssessmentsList';
+// Import the new chart component
+import AssessmentBreakdownChart from '@/components/features/syllabus/AssessmentBreakdownChart';
 
 export default function SyllabusResults() {
   const { id } = useParams();
@@ -176,26 +178,10 @@ export default function SyllabusResults() {
         }}
       />
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-        {/* Left Column: Calendar widget and course info */}
-        <div className="lg:col-span-1 flex flex-col gap-6">
-          <CalendarWidget
-            bgColor={bgColor}
-            events={data.events || []}
-            // (Calculate today's events or any other date filtering logic in the CalendarWidget itself)
-            isDarkMode={isDarkMode}
-            locationPath={location.pathname}
-            syllabusId={id!}
-          />
-          <CourseInfoSection
-            courseInfo={data.course_info}
-            instructors={data.instructors || []}
-            classSchedule={data.class_schedule}
-            isDarkMode={isDarkMode}
-          />
-        </div>
-        {/* Right Column: Assessments and deadlines list */}
-        <div className="lg:col-span-2">
+      {/* Changed grid to 2 columns */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8"> 
+        {/* Assessments List - moved to the left column */}
+        <div className="lg:col-span-1">
           <AssessmentsList
             data={data}
             bgColor={bgColor}
@@ -204,17 +190,36 @@ export default function SyllabusResults() {
             toggleTaskCompletion={toggleTaskCompletion}
           />
         </div>
+
+        {/* Course Info Section & Chart - moved to the right column */}
+        <div className="lg:col-span-1 flex flex-col gap-6"> 
+          {/* Add the breakdown chart here */}
+          {/* Ensure data.grading_breakdown exists and is passed */}
+          {data.grading_breakdown && data.grading_breakdown.length > 0 && (
+            <AssessmentBreakdownChart 
+              data={data.grading_breakdown} 
+              bgColor={bgColor} 
+            />
+          )}
+          <CourseInfoSection
+            courseInfo={data.course_info}
+            instructors={data.instructors || []}
+            classSchedule={data.class_schedule}
+            isDarkMode={isDarkMode}
+          />
+        </div>
       </div>
       
       {/* Global theme toggle button */}
       <button
         onClick={toggleTheme}
         className={cn(
-          "fixed top-4 right-4 p-2 rounded-full transition-colors z-[9999]",
-          isDarkMode ? "bg-gray-800 hover:bg-gray-700 text-gray-200 shadow-lg" : "bg-white hover:bg-gray-100 text-gray-900 shadow-lg"
+          "fixed top-4 right-4 p-2 rounded-full transition-colors z-[9999] shadow-lg",
+          isDarkMode ? "bg-gray-800 hover:bg-gray-700 text-gray-200" : "bg-white hover:bg-gray-100 text-gray-900"
         )}
+        aria-label="Toggle theme"
       >
-        {isDarkMode ? 'Light Mode' : 'Dark Mode'}
+        {isDarkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
       </button>
     </div>
   );

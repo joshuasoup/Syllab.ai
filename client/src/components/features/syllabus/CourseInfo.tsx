@@ -107,6 +107,8 @@ export function CourseInfo({ instructors, classSchedule }: CourseInfoProps) {
         </div>
       </div>
 
+      {/* Remove the entire Class Schedule section */}
+      {/* 
       <div>
         <h3 className={cn(
           "text-xl font-semibold mb-4",
@@ -144,6 +146,7 @@ export function CourseInfo({ instructors, classSchedule }: CourseInfoProps) {
           </div>
         </div>
       </div>
+      */}
     </div>
   );
 } 

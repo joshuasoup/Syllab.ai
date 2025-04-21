@@ -176,7 +176,7 @@ export async function analyzeSyllabusWithGemini(syllabusText: string): Promise<a
     }
 
     // Try to parse JSON
-    let jsonObject;
+    let jsonObject: any; // Use 'any' for flexibility or define a strict type
     try {
       jsonObject = JSON.parse(jsonString);
     } catch (parseError) {
@@ -188,6 +188,73 @@ export async function analyzeSyllabusWithGemini(syllabusText: string): Promise<a
     if (!jsonObject || typeof jsonObject !== 'object') {
       throw new Error("Invalid response structure from Gemini API");
     }
+
+    // *** START: Add Grading Breakdown Logic ***
+
+    // Helper function to categorize assessments
+    const getAssessmentCategory = (name: string | undefined): string => {
+      if (!name) return "Other";
+      const nameLower = name.toLowerCase();
+      if (nameLower.includes("assignment")) return "Assignments";
+      if (nameLower.includes("quiz")) return "Quizzes";
+      if (nameLower.includes("midterm")) return "Midterm Exams";
+      if (nameLower.includes("final exam")) return "Final Exam"; // More specific than just "exam"
+      if (nameLower.includes("exam") || nameLower.includes("test")) return "Tests/Exams"; // General category if not Midterm/Final
+      if (nameLower.includes("project")) return "Projects";
+      if (nameLower.includes("lab")) return "Labs";
+      if (nameLower.includes("participation") || nameLower.includes("attendance")) return "Participation";
+      // Add more rules based on common syllabus terms
+      return "Other"; // Fallback category
+    };
+
+    // Define the structure for the output
+    interface GradingBreakdownItem {
+        component: string;
+        weight: string;
+    }
+
+    // Aggregate weights
+    const categoryWeights: { [key: string]: number } = {};
+    const assessmentsList = jsonObject.assessments || []; // Ensure it's an array
+
+    if (Array.isArray(assessmentsList)) {
+      assessmentsList.forEach((assessment: any) => { // Use 'any' or a defined type for assessment
+        const category = getAssessmentCategory(assessment?.name);
+        const rawWeightArray = assessment?.weight; // Expecting an array like ["10%"]
+
+        // Try to parse the first weight in the array if it exists and is a string
+        if (Array.isArray(rawWeightArray) && rawWeightArray.length > 0 && typeof rawWeightArray[0] === 'string') {
+          const weightString = rawWeightArray[0];
+          try {
+            const weightValue = parseFloat(weightString.replace('%', ''));
+            if (!isNaN(weightValue)) {
+              categoryWeights[category] = (categoryWeights[category] || 0) + weightValue;
+            } else {
+               console.warn(`Could not parse weight value from string '${weightString}' for assessment '${assessment?.name}'`);
+            }
+          } catch (e) {
+            console.warn(`Error parsing weight string '${weightString}' for assessment '${assessment?.name}':`, e);
+          }
+        } else {
+           // Log if weight format is unexpected (optional)
+           // console.warn(`Skipping assessment due to missing or invalid weight format: ${assessment?.name}`, rawWeightArray);
+        }
+      });
+    }
+
+    // Format the results
+    const gradingBreakdown: GradingBreakdownItem[] = Object.entries(categoryWeights).map(
+      ([category, totalWeight]) => ({
+        component: category,
+        // Format weight back to string, handling potential floating point inaccuracies
+        weight: `${totalWeight.toFixed(0)}%` // Adjust precision (e.g., .1f) if needed
+      })
+    );
+
+    // Add the breakdown to the jsonObject BEFORE merging with defaults
+    jsonObject.grading_breakdown = gradingBreakdown;
+
+    // *** END: Add Grading Breakdown Logic ***
 
     // Ensure all required fields exist with default values
     const defaultResponse = {
@@ -208,6 +275,7 @@ export async function analyzeSyllabusWithGemini(syllabusText: string): Promise<a
         tas: []
       },
       assessments: [],
+      grading_breakdown: [],
       important_deadlines: [],
       policies: {
         attendance: "",
